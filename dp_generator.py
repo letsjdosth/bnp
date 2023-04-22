@@ -57,7 +57,7 @@ class DirichletProcessGenerator_StickBreaking:
         return atom_loc, atom_weight
 
     def cumulatative_dist_func(self, atom_loc: list, atom_weight: list, trunc_lower: float, trunc_upper: float):
-        "Warning: to use plt.bar, set -> where='post'"
+        "Warning: to use `plt.bar`, set `where='post'`"
         #sort
         tuple_list = []
         for loc, weight in zip(atom_loc, atom_weight):
