@@ -95,6 +95,7 @@ class DirichletProcessGenerator_StickBreaking:
 
 
 if __name__=="__main__":
+    from random import gammavariate
     from functools import partial
     import numpy as np
     from scipy.stats import norm
@@ -107,7 +108,43 @@ if __name__=="__main__":
     
     def1_dir_inc = False
     def2_stick_breaking = False
-    moment_test = True
+    moment_test = False
+    mdp_test = True
+
+    if mdp_test:
+        inst = DirichletProcessGenerator_StickBreaking(20230419)
+
+        for i in range(4):
+            alpha_prior_shape = 1
+            alpha_prior_rate = 1 #mean 1, var 1
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='blue')
+        for i in range(4):
+            alpha_prior_shape = 10
+            alpha_prior_rate = 10 #mean 1, var 1/10
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='orange')
+        for i in range(4):
+            alpha_prior_shape = 10
+            alpha_prior_rate = 1 #mean 10, var 10
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='green')
+        for i in range(4):
+            alpha_prior_shape = 100
+            alpha_prior_rate = 10 #mean 10, var 1
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='purple')
+        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red')
+        plt.show()
+
 
     if moment_test:
         inst = DirichletProcessGenerator_StickBreaking(20230419)
