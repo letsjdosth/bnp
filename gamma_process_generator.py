@@ -58,8 +58,8 @@ if __name__=="__main__":
     fig, ax = plt.subplots(1, 2)
     for x in range(10):
         grid, cum_hazard, cdf = inst.sampler(1, exp1_baseline_cumulative_hazard, input_grid)
-        ax[0].step(grid, cum_hazard, where="post", c='blue')
-        ax[1].step(grid, cdf, where="post", c='blue')
+        ax[0].step(grid, cum_hazard, where="post", c='orange')
+        ax[1].step(grid, cdf, where="post", c='orange')
     ax[0].plot(grid, grid, c='red')
     ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
     plt.show()
@@ -67,8 +67,8 @@ if __name__=="__main__":
     fig, ax = plt.subplots(1, 2)
     for x in range(10):
         grid, cum_hazard, cdf = inst.sampler(10, exp1_baseline_cumulative_hazard, input_grid)
-        ax[0].step(grid, cum_hazard, where="post", c='blue')
-        ax[1].step(grid, cdf, where="post", c='blue')
+        ax[0].step(grid, cum_hazard, where="post", c='green')
+        ax[1].step(grid, cdf, where="post", c='green')
     ax[0].plot(grid, grid, c='red')
     ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
     plt.show()
@@ -76,8 +76,8 @@ if __name__=="__main__":
     fig, ax = plt.subplots(1, 2)
     for x in range(10):
         grid, cum_hazard, cdf = inst.sampler(100, exp1_baseline_cumulative_hazard, input_grid)
-        ax[0].step(grid, cum_hazard, where="post", c='blue')
-        ax[1].step(grid, cdf, where="post", c='blue')
+        ax[0].step(grid, cum_hazard, where="post", c='purple')
+        ax[1].step(grid, cdf, where="post", c='purple')
     ax[0].plot(grid, grid, c='red')
     ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
     plt.show()

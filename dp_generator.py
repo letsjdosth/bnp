@@ -81,6 +81,18 @@ class DirichletProcessGenerator_StickBreaking:
         grid = grid + [trunc_upper]
 
         return grid, increments, sample_path
+    
+    def mean_var_functional(self, atom_loc:list, atom_weight:list):
+        # n = len(atom_loc)
+        mean_X = 0
+        mean_X2 = 0
+        for loc, w in zip(atom_loc, atom_weight):
+            mean_X += (loc*w)
+            mean_X2 += ((loc)**2 * w)
+        var_X = mean_X2 - mean_X**2
+        return mean_X, var_X, mean_X2
+
+
 
 if __name__=="__main__":
     from functools import partial
@@ -93,8 +105,36 @@ if __name__=="__main__":
 
     np.random.seed(20230419)    
     
-    def1_dir_inc = True
-    def2_stick_breaking = True
+    def1_dir_inc = False
+    def2_stick_breaking = False
+    moment_test = True
+
+    if moment_test:
+        inst = DirichletProcessGenerator_StickBreaking(20230419)
+        mean_vec = []
+        var_vec = []
+        X2_vec = []
+        alpha = 10
+        for i in range(1000):
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 1000)
+            mean_val, var_val, X2_val = inst.mean_var_functional(atom_loc, atom_weight)
+            mean_vec.append(mean_val)
+            var_vec.append(var_val)
+            X2_vec.append(X2_val)
+        
+        print("E[mu(G)]:", "sim:", np.mean(mean_vec), " true:", 0)
+        print("Var[mu(G)]:", "sim:", np.var(mean_vec), " true:", 1/(alpha+1))
+        print("E[mu2(G)]:", "sim:", np.mean(X2_vec), " true:", 1)
+        print("E[sigma2(G)]:", "sim:", np.mean(var_vec), " true:", alpha/(alpha+1))
+
+        plt.hist(mean_vec, bins=100)
+        plt.title("mean_of_G")
+        plt.show()
+        plt.hist(var_vec, bins=100)
+        plt.title("variance_of_G")
+        plt.show()
+
+
 
 
     if def1_dir_inc:
