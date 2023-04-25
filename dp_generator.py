@@ -106,72 +106,10 @@ if __name__=="__main__":
 
     np.random.seed(20230419)    
     
-    def1_dir_inc = False
-    def2_stick_breaking = False
-    moment_test = False
-    mdp_test = True
-
-    if mdp_test:
-        inst = DirichletProcessGenerator_StickBreaking(20230419)
-
-        for i in range(4):
-            alpha_prior_shape = 1
-            alpha_prior_rate = 1 #mean 1, var 1
-            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
-            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
-            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
-            plt.step(grid, path, where='post', c='blue')
-        for i in range(4):
-            alpha_prior_shape = 10
-            alpha_prior_rate = 10 #mean 1, var 1/10
-            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
-            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
-            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
-            plt.step(grid, path, where='post', c='orange')
-        for i in range(4):
-            alpha_prior_shape = 10
-            alpha_prior_rate = 1 #mean 10, var 10
-            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
-            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
-            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
-            plt.step(grid, path, where='post', c='green')
-        for i in range(4):
-            alpha_prior_shape = 100
-            alpha_prior_rate = 10 #mean 10, var 1
-            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
-            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
-            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
-            plt.step(grid, path, where='post', c='purple')
-        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red')
-        plt.show()
-
-
-    if moment_test:
-        inst = DirichletProcessGenerator_StickBreaking(20230419)
-        mean_vec = []
-        var_vec = []
-        X2_vec = []
-        alpha = 10
-        for i in range(1000):
-            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 1000)
-            mean_val, var_val, X2_val = inst.mean_var_functional(atom_loc, atom_weight)
-            mean_vec.append(mean_val)
-            var_vec.append(var_val)
-            X2_vec.append(X2_val)
-        
-        print("E[mu(G)]:", "sim:", np.mean(mean_vec), " true:", 0)
-        print("Var[mu(G)]:", "sim:", np.var(mean_vec), " true:", 1/(alpha+1))
-        print("E[mu2(G)]:", "sim:", np.mean(X2_vec), " true:", 1)
-        print("E[sigma2(G)]:", "sim:", np.mean(var_vec), " true:", alpha/(alpha+1))
-
-        plt.hist(mean_vec, bins=100)
-        plt.title("mean_of_G")
-        plt.show()
-        plt.hist(var_vec, bins=100)
-        plt.title("variance_of_G")
-        plt.show()
-
-
+    def1_dir_inc = True #4a
+    def2_stick_breaking = True #4a
+    moment_test = True #4b
+    mdp_test = True #4c
 
 
     if def1_dir_inc:
@@ -186,22 +124,33 @@ if __name__=="__main__":
         plt.bar(grid, increments, 0.1, color='orange')
         plt.show()
         
-
+        grid, _, path = inst.sampler(0.1, std_norm_cdf, std_norm_sampler, 500, -5, 5)
+        plt.step(grid, path, where='post', c='blue', label=r'$\alpha$=0.1')
         for i in range(4):
             grid, _, path = inst.sampler(0.1, std_norm_cdf, std_norm_sampler, 500, -5, 5)
             plt.step(grid, path, where='post', c='blue')
+
+        grid, _, path = inst.sampler(1, std_norm_cdf, std_norm_sampler, 500, -5, 5)
+        plt.step(grid, path, where='post', c='orange', label=r'$\alpha$=1')
         for i in range(4):
             grid, _, path = inst.sampler(1, std_norm_cdf, std_norm_sampler, 500, -5, 5)
             plt.step(grid, path, where='post', c='orange')
+
+        grid, _, path = inst.sampler(10, std_norm_cdf, std_norm_sampler, 500, -5, 5)
+        plt.step(grid, path, where='post', c='green', label=r'$\alpha$=10')
         for i in range(4):
             grid, _, path = inst.sampler(10, std_norm_cdf, std_norm_sampler, 500, -5, 5)
             plt.step(grid, path, where='post', c='green')
+
+        grid, _, path = inst.sampler(100, std_norm_cdf, std_norm_sampler, 500, -5, 5)
+        plt.step(grid, path, where='post', c='purple', label=r'$\alpha$=100')
         for i in range(4):
             grid, _, path = inst.sampler(100, std_norm_cdf, std_norm_sampler, 500, -5, 5)
             plt.step(grid, path, where='post', c='purple')
-        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red')
-        plt.show()
 
+        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red', label=r'$G_0$=N(0,1)')
+        plt.legend()
+        plt.show()
 
     
     if def2_stick_breaking:
@@ -222,23 +171,123 @@ if __name__=="__main__":
         plt.bar(grid, increments, 0.1, color='orange')
         plt.show()
 
+        atom_loc, atom_weight = inst.atom_sampler(0.1, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='blue', label=r'$\alpha$=0.1')
         for i in range(4):
             atom_loc, atom_weight = inst.atom_sampler(0.1, std_norm_sampler, 500)
             grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
             plt.step(grid, path, where='post', c='blue')
+        atom_loc, atom_weight = inst.atom_sampler(1, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='orange', label=r'$\alpha$=1')
         for i in range(4):
             atom_loc, atom_weight = inst.atom_sampler(1, std_norm_sampler, 500)
             grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
             plt.step(grid, path, where='post', c='orange')
+        atom_loc, atom_weight = inst.atom_sampler(10, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='green', label=r'$\alpha$=10')
         for i in range(4):
             atom_loc, atom_weight = inst.atom_sampler(10, std_norm_sampler, 500)
             grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
             plt.step(grid, path, where='post', c='green')
+        atom_loc, atom_weight = inst.atom_sampler(100, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='purple', label=r'$\alpha$=100')
         for i in range(4):
             atom_loc, atom_weight = inst.atom_sampler(100, std_norm_sampler, 500)
             grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
             plt.step(grid, path, where='post', c='purple')
-        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red')
+        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red', label=r'$G_0$=N(0,1)')
+        plt.legend()
         plt.show()
 
 
+    if moment_test:
+        inst = DirichletProcessGenerator_StickBreaking(20230419)
+        mean_vec = []
+        var_vec = []
+        X2_vec = []
+        alpha = 10
+        for i in range(1000):
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 1000)
+            mean_val, var_val, X2_val = inst.mean_var_functional(atom_loc, atom_weight)
+            mean_vec.append(mean_val)
+            var_vec.append(var_val)
+            X2_vec.append(X2_val)
+        
+        print("E[mu(G)]:", "sim:", np.mean(mean_vec), " true:", 0)
+        print("Var[mu(G)]:", "sim:", np.var(mean_vec), " true:", 1/(alpha+1))
+        print("E[integral x^2 dG]:", "sim:", np.mean(X2_vec), " true:", 1)
+        print("E[sigma^2(G)]:", "sim:", np.mean(var_vec), " true:", alpha/(alpha+1))
+
+        plt.hist(mean_vec, bins=100)
+        plt.title("mean_functional_of_G")
+        plt.show()
+        plt.hist(var_vec, bins=100)
+        plt.title("variance_functional_of_G")
+        plt.show()
+
+
+    if mdp_test:
+        alpha_prior_shape = 1
+        alpha_prior_rate = 1 #mean 1, var 1
+        alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+        atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='blue', label=r'$\alpha\sim$gamma(1,1)')
+        for i in range(4):
+            alpha_prior_shape = 1
+            alpha_prior_rate = 1 #mean 1, var 1
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='blue')
+
+        alpha_prior_shape = 10
+        alpha_prior_rate = 10 #mean 1, var 1/10
+        alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+        atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='orange', label=r'$\alpha\sim$gamma(10,10)')
+        for i in range(4):
+            alpha_prior_shape = 10
+            alpha_prior_rate = 10 #mean 1, var 1/10
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='orange')
+
+
+        alpha_prior_shape = 100
+        alpha_prior_rate = 10 #mean 10, var 1
+        alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+        atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='purple', label=r'$\alpha\sim$gamma(100,10)')
+        for i in range(4):
+            alpha_prior_shape = 100
+            alpha_prior_rate = 10 #mean 10, var 1
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='purple')
+        plt.plot(np.linspace(-3,3,200), std_norm_cdf(np.linspace(-3,3,200)), c='red', label=r'$G_0$=N(0,1)')
+
+        alpha_prior_shape = 10
+        alpha_prior_rate = 1 #mean 10, var 10
+        alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+        atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+        grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+        plt.step(grid, path, where='post', c='green', label=r'$\alpha\sim$gamma(10,1)')
+        for i in range(4):
+            alpha_prior_shape = 10
+            alpha_prior_rate = 1 #mean 10, var 10
+            alpha = gammavariate(alpha_prior_shape, 1/alpha_prior_rate)
+            atom_loc, atom_weight = inst.atom_sampler(alpha, std_norm_sampler, 500)
+            grid, _, path = inst.cumulatative_dist_func(atom_loc, atom_weight, -5, 5)
+            plt.step(grid, path, where='post', c='green')
+
+        plt.legend()
+        plt.show()

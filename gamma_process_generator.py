@@ -42,6 +42,7 @@ if __name__=="__main__":
     
     def exp1_baseline_cumulative_hazard(t):
         return t
+    
     inst = GammaProcess_from_NeutralToTheRightProcess(20230421)
     input_grid = [gammavariate(1, 1) for _ in range(3000)]
     input_grid.sort()
@@ -51,8 +52,12 @@ if __name__=="__main__":
         grid, cum_hazard, cdf = inst.sampler(0.1, exp1_baseline_cumulative_hazard, input_grid)
         ax[0].step(grid, cum_hazard, where="post", c='blue')
         ax[1].step(grid, cdf, where="post", c='blue')
-    ax[0].plot(grid, grid, c='red')
-    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
+    ax[0].plot(grid, grid, c='red', label='baseline')
+    ax[0].set_title(r'$c$=0.1' + ', Cumulative Hazard')
+    ax[0].legend()
+    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red', label='baseline')
+    ax[1].set_title('Cumulative Distribution')
+    ax[1].legend()
     plt.show()
 
     fig, ax = plt.subplots(1, 2)
@@ -60,8 +65,12 @@ if __name__=="__main__":
         grid, cum_hazard, cdf = inst.sampler(1, exp1_baseline_cumulative_hazard, input_grid)
         ax[0].step(grid, cum_hazard, where="post", c='orange')
         ax[1].step(grid, cdf, where="post", c='orange')
-    ax[0].plot(grid, grid, c='red')
-    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
+    ax[0].plot(grid, grid, c='red', label='baseline')
+    ax[0].set_title(r'$c$=1' + ', Cumulative Hazard')
+    ax[0].legend()
+    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red', label='baseline')
+    ax[1].set_title('Cumulative Distribution')
+    ax[1].legend()
     plt.show()
 
     fig, ax = plt.subplots(1, 2)
@@ -69,8 +78,12 @@ if __name__=="__main__":
         grid, cum_hazard, cdf = inst.sampler(10, exp1_baseline_cumulative_hazard, input_grid)
         ax[0].step(grid, cum_hazard, where="post", c='green')
         ax[1].step(grid, cdf, where="post", c='green')
-    ax[0].plot(grid, grid, c='red')
-    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
+    ax[0].plot(grid, grid, c='red', label='baseline')
+    ax[0].set_title(r'$c$=10' + ', Cumulative Hazard')
+    ax[0].legend()
+    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red', label='baseline')
+    ax[1].set_title('Cumulative Distribution')
+    ax[1].legend()
     plt.show()
 
     fig, ax = plt.subplots(1, 2)
@@ -78,6 +91,10 @@ if __name__=="__main__":
         grid, cum_hazard, cdf = inst.sampler(100, exp1_baseline_cumulative_hazard, input_grid)
         ax[0].step(grid, cum_hazard, where="post", c='purple')
         ax[1].step(grid, cdf, where="post", c='purple')
-    ax[0].plot(grid, grid, c='red')
-    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red')
+    ax[0].plot(grid, grid, c='red', label='baseline')
+    ax[0].set_title(r'$c$=100' + ', Cumulative Hazard')
+    ax[0].legend()
+    ax[1].plot(grid, [1-exp(-r) for r in grid], c='red', label='baseline')
+    ax[1].set_title('Cumulative Distribution')
+    ax[1].legend()
     plt.show()
