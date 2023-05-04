@@ -56,6 +56,47 @@ class DirichletProcessGenerator_StickBreaking:
         atom_weight.append(left_stick_length)
         return atom_loc, atom_weight
 
+    def atom_trimmer(self, atom_loc, atom_weight):
+        #sort
+        tuple_list = []
+        for loc, weight in zip(atom_loc, atom_weight):
+            tuple_list.append((loc, weight))
+        
+        def sort_key(tup):
+            return tup[0]
+        tuple_list.sort(key=sort_key)
+        
+        trimmed_loc = []
+        trimmed_weight = []
+
+        for tup in tuple_list:
+            try:
+                last_loc = trimmed_loc[-1]
+            except IndexError:
+                trimmed_loc.append(tup[0])
+                trimmed_weight.append(tup[1])
+            else:
+                if tup[0] != last_loc:
+                    trimmed_loc.append(tup[0])
+                    trimmed_weight.append(tup[1])
+                else:
+                    trimmed_weight[-1] += tup[1]
+        return trimmed_loc, trimmed_weight        
+
+    def atom_loc_unifier_by_expansion(self, grid, atom_loc: list, atom_weight: list):
+        t_atom_loc, t_atom_weight = self.atom_trimmer(atom_loc, atom_weight)
+        if t_atom_loc == grid:
+            return t_atom_weight
+        else:
+            expanded_weight_vec = [0 for _ in range(len(grid))]
+            for loc, w in zip(t_atom_loc, t_atom_weight):
+                for i, g in enumerate(grid):
+                    if loc == g:
+                        expanded_weight_vec[i] = w
+                        break
+            return expanded_weight_vec
+
+
     def cumulatative_dist_func(self, atom_loc: list, atom_weight: list, trunc_lower: float, trunc_upper: float):
         "Warning: to use `plt.bar`, set `where='post'`"
         #sort
@@ -72,10 +113,15 @@ class DirichletProcessGenerator_StickBreaking:
         grid = [trunc_lower]
         cum_dist_val = 0
         for tup in tuple_list:
-            cum_dist_val += tup[1]
-            grid.append(tup[0])
-            increments.append(tup[1])
-            sample_path.append(cum_dist_val)
+            if tup[0] != grid[-1]:
+                cum_dist_val += tup[1]
+                grid.append(tup[0])
+                increments.append(tup[1])
+                sample_path.append(cum_dist_val)
+            else:
+                cum_dist_val += tup[1]
+                increments[-1] += tup[1]
+                sample_path[-1] += tup[1]
         increments.append(0)
         sample_path.append(1)
         grid = grid + [trunc_upper]

@@ -105,7 +105,7 @@ class Post_DP_Q2(DirichletProcessGenerator_StickBreaking):
         atom_loc = []
         for _ in range(num_atom):
             unif_sample = uniform(0,1)
-            if unif_sample > len(self.y)/(precision+len(self.y)):
+            if unif_sample < precision/(precision+len(self.y)):
                 loc = sp.stats.poisson.rvs(lamb)
             else:
                 loc = self.y[randint(0, len(self.y)-1)]
@@ -131,40 +131,57 @@ if __name__=="__main__":
         plt.hist(pois5_300, bins=20)
         plt.show()
         fit_inst = HW2_Q2_alpha_lambda_sampler(pois5_300, [10, 10], None)
-        fit_inst.generate_samples(3000)
+        fit_inst.generate_samples(2000)
         diag_inst = MCMC_Diag()
         diag_inst.set_mc_samples_from_list(fit_inst.MC_sample)
         diag_inst.set_variable_names([r"$\alpha$",r"$\lambda$"])
-        diag_inst.burnin(2000)
-        diag_inst.thinning(10)
+        diag_inst.burnin(1000)
         diag_inst.show_traceplot((1,2))
         
         cdf_inst = Post_DP_Q2(pois5_300, 20230504)
+        density_boxplot_mat = []
+
         for mc_sample in diag_inst.MC_sample:
-            atom_loc, atom_weight = cdf_inst.atom_sampler(mc_sample, 300)
+            atom_loc, atom_weight = cdf_inst.atom_sampler(mc_sample, 3000)
+            unified_grid = [i for i in range(0, 20)]
+            unified_weight = cdf_inst.atom_loc_unifier_by_expansion(unified_grid, atom_loc, atom_weight)
+            density_boxplot_mat.append(unified_weight)
+
             grid, increments, sample_path = cdf_inst.cumulatative_dist_func(atom_loc, atom_weight, 0, 30)
+
             plt.step(grid, sample_path, where='post', label=r'test', alpha=0.2, c='blue')
-        plt.step(np.arange(0,30), sp.stats.poisson.cdf(np.arange(0,30), mu=5), where='post', c='red')
+        plt.step(np.arange(0,30), 0.7*sp.stats.poisson.cdf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.cdf(np.arange(0,30), mu=11), where='post', c='red')
+        plt.show()
+
+        plt.boxplot(np.array(density_boxplot_mat))
         plt.show()
 
     if case2:
         plt.hist(pois_mixture_300, bins=20)
         plt.show()
         fit_inst = HW2_Q2_alpha_lambda_sampler(pois_mixture_300, [10, 10], None)
-        fit_inst.generate_samples(3000)
+        fit_inst.generate_samples(2000)
         diag_inst = MCMC_Diag()
         diag_inst.set_mc_samples_from_list(fit_inst.MC_sample)
         diag_inst.set_variable_names([r"$\alpha$",r"$\lambda$"])
-        diag_inst.burnin(2000)
-        diag_inst.thinning(10)
+        diag_inst.burnin(1000)
+        # diag_inst.thinning(10)
         diag_inst.show_traceplot((1,2))
         
         cdf_inst = Post_DP_Q2(pois_mixture_300, 20230504)
+        density_boxplot_mat = []
+
         for mc_sample in diag_inst.MC_sample:
-            atom_loc, atom_weight = cdf_inst.atom_sampler(mc_sample, 300)
+            atom_loc, atom_weight = cdf_inst.atom_sampler(mc_sample, 3000)
+            unified_grid = [i for i in range(0, 20)]
+            unified_weight = cdf_inst.atom_loc_unifier_by_expansion(unified_grid, atom_loc, atom_weight)
+            density_boxplot_mat.append(unified_weight)
+
             grid, increments, sample_path = cdf_inst.cumulatative_dist_func(atom_loc, atom_weight, 0, 30)
+
             plt.step(grid, sample_path, where='post', label=r'test', alpha=0.2, c='blue')
         plt.step(np.arange(0,30), 0.7*sp.stats.poisson.cdf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.cdf(np.arange(0,30), mu=11), where='post', c='red')
         plt.show()
 
-        
+        plt.boxplot(np.array(density_boxplot_mat))
+        plt.show()
