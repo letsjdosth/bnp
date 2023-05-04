@@ -13,6 +13,7 @@ np.random.seed(20230513)
 
 #generate data
 pois5_300 = sp.stats.poisson.rvs(5,size=300)
+
 pois_mixture_300 = []
 for i in range(300):
     u = uniform(0, 1)
@@ -131,11 +132,11 @@ if __name__=="__main__":
         plt.hist(pois5_300, bins=20)
         plt.show()
         fit_inst = HW2_Q2_alpha_lambda_sampler(pois5_300, [10, 10], None)
-        fit_inst.generate_samples(2000)
+        fit_inst.generate_samples(4000)
         diag_inst = MCMC_Diag()
         diag_inst.set_mc_samples_from_list(fit_inst.MC_sample)
         diag_inst.set_variable_names([r"$\alpha$",r"$\lambda$"])
-        diag_inst.burnin(1000)
+        diag_inst.burnin(2000)
         diag_inst.show_traceplot((1,2))
         
         cdf_inst = Post_DP_Q2(pois5_300, 20230504)
@@ -150,21 +151,23 @@ if __name__=="__main__":
             grid, increments, sample_path = cdf_inst.cumulatative_dist_func(atom_loc, atom_weight, 0, 30)
 
             plt.step(grid, sample_path, where='post', label=r'test', alpha=0.2, c='blue')
-        plt.step(np.arange(0,30), 0.7*sp.stats.poisson.cdf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.cdf(np.arange(0,30), mu=11), where='post', c='red')
+        plt.step(np.arange(0,30),sp.stats.poisson.cdf(np.arange(0,30), mu=5), where='post', c='red')
         plt.show()
 
         plt.boxplot(np.array(density_boxplot_mat))
+        plt.xticks(np.arange(1,31), np.arange(0,30))
+        plt.plot(np.arange(1,31), sp.stats.poisson.pmf(np.arange(0,30), mu=5), c='red')
         plt.show()
 
     if case2:
         plt.hist(pois_mixture_300, bins=20)
         plt.show()
         fit_inst = HW2_Q2_alpha_lambda_sampler(pois_mixture_300, [10, 10], None)
-        fit_inst.generate_samples(2000)
+        fit_inst.generate_samples(4000)
         diag_inst = MCMC_Diag()
         diag_inst.set_mc_samples_from_list(fit_inst.MC_sample)
         diag_inst.set_variable_names([r"$\alpha$",r"$\lambda$"])
-        diag_inst.burnin(1000)
+        diag_inst.burnin(2000)
         # diag_inst.thinning(10)
         diag_inst.show_traceplot((1,2))
         
@@ -184,4 +187,6 @@ if __name__=="__main__":
         plt.show()
 
         plt.boxplot(np.array(density_boxplot_mat))
+        plt.xticks(np.arange(1,31), np.arange(0,30))
+        plt.plot(np.arange(1,31), 0.7*sp.stats.poisson.pmf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.pmf(np.arange(0,30), mu=11), c='red')
         plt.show()
