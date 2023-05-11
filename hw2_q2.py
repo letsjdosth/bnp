@@ -8,8 +8,8 @@ from pyBayes.MCMC_Core import MCMC_MH, MCMC_Diag, MCMC_base
 from pyBayes.util_MCMC_proposal import unif_proposal_log_pdf, unif_proposal_sampler
 from dp_generator import DirichletProcessGenerator_StickBreaking
 
-seed(20230503)
-np.random.seed(20230513)
+seed(20230503+7)
+np.random.seed(20230513+7)
 
 #generate data
 pois5_300 = sp.stats.poisson.rvs(5,size=300)
@@ -75,14 +75,14 @@ class HW2_Q2_alpha_lambda_sampler(MCMC_base):
 
         def _proposal_sampler(last):
             # alpha, lambda
-            new_alpha = unif_proposal_sampler([last[0]], 0, inf, 2)
-            new_lambda = unif_proposal_sampler([last[1]], 0, inf, 0.5)
+            new_alpha = unif_proposal_sampler([last[0]], 0, inf, 3)
+            new_lambda = unif_proposal_sampler([last[1]], 0, inf, 1)
             return [new_alpha[0], new_lambda[0]]
 
         def _proposal_log_density(from_smpl, to_smpl):
             # alpha, lambda
-            log_val = unif_proposal_log_pdf([from_smpl[0]], [to_smpl[0]], 0, inf, 2)
-            log_val += unif_proposal_log_pdf([from_smpl[1]], [to_smpl[1]], 0, inf, 0.5)
+            log_val = unif_proposal_log_pdf([from_smpl[0]], [to_smpl[0]], 0, inf, 3)
+            log_val += unif_proposal_log_pdf([from_smpl[1]], [to_smpl[1]], 0, inf, 1)
             return log_val
         
         initial = self.MC_sample[-1]
@@ -129,7 +129,7 @@ if __name__=="__main__":
 
     #need: add histogram by atom-weight boxplot
     if case1:
-        plt.hist(pois5_300, bins=20)
+        plt.hist(pois5_300, bins=[i for i in range(20)])
         plt.show()
         fit_inst = HW2_Q2_alpha_lambda_sampler(pois5_300, [10, 10], None)
         fit_inst.generate_samples(4000)
@@ -150,17 +150,28 @@ if __name__=="__main__":
 
             grid, increments, sample_path = cdf_inst.cumulatative_dist_func(atom_loc, atom_weight, 0, 30)
 
-            plt.step(grid, sample_path, where='post', label=r'test', alpha=0.2, c='blue')
-        plt.step(np.arange(0,30),sp.stats.poisson.cdf(np.arange(0,30), mu=5), where='post', c='red')
+            plt.step(grid, sample_path, where='post', alpha=0.2, c='blue')
+        plt.step(np.arange(0,30),sp.stats.poisson.cdf(np.arange(0,30), mu=5), where='post', c='red', label='true')
+        plt.legend()
         plt.show()
 
         plt.boxplot(np.array(density_boxplot_mat))
         plt.xticks(np.arange(1,31), np.arange(0,30))
-        plt.plot(np.arange(1,31), sp.stats.poisson.pmf(np.arange(0,30), mu=5), c='red')
+        plt.plot(np.arange(1,31), sp.stats.poisson.pmf(np.arange(0,30), mu=5), c='red', label='true')
+        plt.legend()
+        plt.show()
+
+        quant = np.quantile(density_boxplot_mat, q=[0.025, 0.5, 0.975], axis=0)
+        plt.plot(np.arange(0,20), quant[0,:], c='gray', label='0.95 cred.interval')
+        plt.plot(np.arange(0,20), quant[1,:], c='blue', label='median')
+        plt.plot(np.arange(0,20), quant[2,:], c='gray')
+        plt.plot(np.arange(0,20), sp.stats.poisson.pmf(np.arange(0,20), mu=5), c='red', label='true')
+        plt.hist(pois5_300, bins=[i for i in range(20)], density=True, alpha=0.5, label='data')
+        plt.legend()
         plt.show()
 
     if case2:
-        plt.hist(pois_mixture_300, bins=20)
+        plt.hist(pois_mixture_300, bins=[i for i in range(20)])
         plt.show()
         fit_inst = HW2_Q2_alpha_lambda_sampler(pois_mixture_300, [10, 10], None)
         fit_inst.generate_samples(4000)
@@ -182,11 +193,22 @@ if __name__=="__main__":
 
             grid, increments, sample_path = cdf_inst.cumulatative_dist_func(atom_loc, atom_weight, 0, 30)
 
-            plt.step(grid, sample_path, where='post', label=r'test', alpha=0.2, c='blue')
-        plt.step(np.arange(0,30), 0.7*sp.stats.poisson.cdf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.cdf(np.arange(0,30), mu=11), where='post', c='red')
+            plt.step(grid, sample_path, where='post', alpha=0.2, c='blue')
+        plt.step(np.arange(0,30), 0.7*sp.stats.poisson.cdf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.cdf(np.arange(0,30), mu=11), where='post', c='red', label='true')
+        plt.legend()
         plt.show()
 
         plt.boxplot(np.array(density_boxplot_mat))
         plt.xticks(np.arange(1,31), np.arange(0,30))
-        plt.plot(np.arange(1,31), 0.7*sp.stats.poisson.pmf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.pmf(np.arange(0,30), mu=11), c='red')
+        plt.plot(np.arange(1,31), 0.7*sp.stats.poisson.pmf(np.arange(0,30), mu=3) + 0.3*sp.stats.poisson.pmf(np.arange(0,30), mu=11), c='red', label='true')
+        plt.legend()
+        plt.show()
+
+        quant = np.quantile(density_boxplot_mat, q=[0.025, 0.5, 0.975], axis=0)
+        plt.plot(np.arange(0,20), quant[0,:], c='gray', label='0.95 cred.interval')
+        plt.plot(np.arange(0,20), quant[1,:], c='blue', label='median')
+        plt.plot(np.arange(0,20), quant[2,:], c='gray')
+        plt.plot(np.arange(0,20), 0.7*sp.stats.poisson.pmf(np.arange(0,20), mu=3) + 0.3*sp.stats.poisson.pmf(np.arange(0,20), mu=11), c='red', label='true')
+        plt.hist(pois_mixture_300, bins=[i for i in range(20)], density=True, alpha=0.5, label='data')
+        plt.legend()
         plt.show()

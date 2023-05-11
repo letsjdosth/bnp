@@ -74,84 +74,96 @@ if __name__=="__main__":
                 partial(sp.stats.norm.rvs, loc=2, scale=1),
                 partial(sp.stats.norm.rvs, loc=0, scale=0.1),
                 partial(sp.stats.norm.rvs, loc=0, scale=2)]
-    prior_G0_str = ["N(0,1)","N(2,1)","N(0,0.1^2)","N(0,2^2)"]
+    prior_G0_str = [r"N(0,1)",r"N(2,1)",r"N(0,$0.1^2$)",r"N(0,$2^2$)"]
     prior_alpha = [1, 10, 100, 1000]
 
 
-    z_test = True
-    y_test = False
+    z_test = False
+    y_test = True
 
     if z_test:
-        for g0, g0_str in zip(prior_G0, prior_G0_str):
-            for alpha in prior_alpha:
-                for i in range(5):
+        fig, axs = plt.subplots(len(prior_G0), len(prior_alpha), figsize=(len(prior_alpha)*4, len(prior_G0)*4))
+        fig.tight_layout(pad=3, w_pad=3, h_pad=3)
+        for g_idx, (g0, g0_str) in enumerate(zip(prior_G0, prior_G0_str)):
+            for a_idx, alpha in enumerate(prior_alpha):
+                for i in range(20):
                     fit_inst = Post_DP(z_20, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 1000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 3000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
-                    plt.step(grid, sample_path, where='post', label=r'$\alpha$='+str(alpha)+r' $G_0$='+g0_str)
-                plt.plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
-                plt.legend()
-                plt.title("n=20")
-                plt.show()
+                    axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
+                axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
+                axs[g_idx, a_idx].legend()
+                axs[g_idx, a_idx].set_title("n=20, "+ r'$\alpha$='+str(alpha)+r', $G_0$='+g0_str, fontsize=12)
+        plt.show()
 
-        for g0, g0_str in zip(prior_G0, prior_G0_str):
-            for alpha in prior_alpha:
-                for _ in range(5):
+        fig, axs = plt.subplots(len(prior_G0), len(prior_alpha), figsize=(len(prior_alpha)*4, len(prior_G0)*4))
+        fig.tight_layout(pad=3, w_pad=3, h_pad=3)
+        for g_idx, (g0, g0_str) in enumerate(zip(prior_G0, prior_G0_str)):
+            for a_idx, alpha in enumerate(prior_alpha):
+                for i in range(20):
                     fit_inst = Post_DP(z_200, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 1000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 3000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
-                    plt.step(grid, sample_path, where='post', label=r'$\alpha$='+str(alpha)+r' $G_0$='+g0_str)
-                plt.plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
-                plt.legend()
-                plt.title("n=200")
-                plt.show()
+                    axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
+                axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
+                axs[g_idx, a_idx].legend()
+                axs[g_idx, a_idx].set_title("n=200, "+r'$\alpha$='+str(alpha)+r', $G_0$='+g0_str)
+        plt.show()
 
-        for g0, g0_str in zip(prior_G0, prior_G0_str):
-            for alpha in prior_alpha:
-                for _ in range(5):
+        fig, axs = plt.subplots(len(prior_G0), len(prior_alpha), figsize=(len(prior_alpha)*4, len(prior_G0)*4))
+        fig.tight_layout(pad=3, w_pad=3, h_pad=3)
+        for g_idx, (g0, g0_str) in enumerate(zip(prior_G0, prior_G0_str)):
+            for a_idx, alpha in enumerate(prior_alpha):
+                for i in range(20):
                     fit_inst = Post_DP(z_2000, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 1000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 3000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
-                    plt.step(grid, sample_path, where='post', label=r'$\alpha$='+str(alpha)+r' $G_0$='+g0_str)
-                plt.plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
-                plt.legend()
-                plt.title("n=2000")
-                plt.show()
+                    axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
+                axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
+                axs[g_idx, a_idx].legend()
+                axs[g_idx, a_idx].set_title("n=2000, "+r'$\alpha$='+str(alpha)+r', $G_0$='+g0_str, fontsize=12)
+        plt.show()
 
     if y_test:
-        for g0, g0_str in zip(prior_G0, prior_G0_str):
-            for alpha in prior_alpha:
-                for i in range(5):
+        fig, axs = plt.subplots(len(prior_G0), len(prior_alpha), figsize=(len(prior_alpha)*4, len(prior_G0)*4))
+        fig.tight_layout(pad=3, w_pad=3, h_pad=3)
+        for g_idx, (g0, g0_str) in enumerate(zip(prior_G0, prior_G0_str)):
+            for a_idx, alpha in enumerate(prior_alpha):
+                for i in range(20):
                     fit_inst = Post_DP(y_20, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 1000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 4000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
-                    plt.step(grid, sample_path, where='post', label=r'$\alpha$='+str(alpha)+r' $G_0$='+g0_str)
-                plt.plot(np.linspace(-10, 10, 200), mixture_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
-                plt.legend()
-                plt.title("n=20")
-                plt.show()
+                    axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
+                axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), mixture_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
+                axs[g_idx, a_idx].legend()
+                axs[g_idx, a_idx].set_title("n=20, "+r'$\alpha$='+str(alpha)+r', $G_0$='+g0_str, fontsize=12)
+        plt.show()
 
-        for g0, g0_str in zip(prior_G0, prior_G0_str):
-            for alpha in prior_alpha:
-                for _ in range(5):
+        fig, axs = plt.subplots(len(prior_G0), len(prior_alpha), figsize=(len(prior_alpha)*4, len(prior_G0)*4))
+        fig.tight_layout(pad=3, w_pad=3, h_pad=3)
+        for g_idx, (g0, g0_str) in enumerate(zip(prior_G0, prior_G0_str)):
+            for a_idx, alpha in enumerate(prior_alpha):
+                for i in range(20):
                     fit_inst = Post_DP(y_200, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 1000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 4000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
-                    plt.step(grid, sample_path, where='post', label=r'$\alpha$='+str(alpha)+r' $G_0$='+g0_str)
-                plt.plot(np.linspace(-10, 10, 200), mixture_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
-                plt.legend()
-                plt.title("n=200")
-                plt.show()
+                    axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
+                axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), mixture_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
+                axs[g_idx, a_idx].legend()
+                axs[g_idx, a_idx].set_title("n=200, "+r'$\alpha$='+str(alpha)+r', $G_0$='+g0_str, fontsize=12)
+        plt.show()
 
-        for g0, g0_str in zip(prior_G0, prior_G0_str):
-            for alpha in prior_alpha:
-                for _ in range(5):
+        fig, axs = plt.subplots(len(prior_G0), len(prior_alpha), figsize=(len(prior_alpha)*4, len(prior_G0)*4))
+        fig.tight_layout(pad=3, w_pad=3, h_pad=3)
+        for g_idx, (g0, g0_str) in enumerate(zip(prior_G0, prior_G0_str)):
+            for a_idx, alpha in enumerate(prior_alpha):
+                for i in range(20):
                     fit_inst = Post_DP(y_2000, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 1000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 9000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
-                    plt.step(grid, sample_path, where='post', label=r'$\alpha$='+str(alpha)+r' $G_0$='+g0_str)
-                plt.plot(np.linspace(-10, 10, 200), mixture_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
-                plt.legend()
-                plt.title("n=2000")
-                plt.show()
+                    axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
+                axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), mixture_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
+                axs[g_idx, a_idx].legend()
+                axs[g_idx, a_idx].set_title("n=2000, "+r'$\alpha$='+str(alpha)+r', $G_0$='+g0_str, fontsize=12)
+        plt.show()
 
