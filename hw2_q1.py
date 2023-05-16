@@ -88,7 +88,7 @@ if __name__=="__main__":
             for a_idx, alpha in enumerate(prior_alpha):
                 for i in range(20):
                     fit_inst = Post_DP(z_20, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 3000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 4000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
                     axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
                 axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
@@ -102,7 +102,7 @@ if __name__=="__main__":
             for a_idx, alpha in enumerate(prior_alpha):
                 for i in range(20):
                     fit_inst = Post_DP(z_200, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 3000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 4000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
                     axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
                 axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
@@ -116,7 +116,7 @@ if __name__=="__main__":
             for a_idx, alpha in enumerate(prior_alpha):
                 for i in range(20):
                     fit_inst = Post_DP(z_2000, 20230503+i)
-                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 3000)
+                    atom_loc, atom_weight = fit_inst.atom_sampler(alpha, g0, 9000)
                     grid, increments, sample_path = fit_inst.cumulatative_dist_func(atom_loc, atom_weight, -10, 10)
                     axs[g_idx, a_idx].step(grid, sample_path, where='post', c='blue', alpha=0.15)
                 axs[g_idx, a_idx].plot(np.linspace(-10, 10, 200), std_norm_cdf(np.linspace(-10, 10, 200)), c='red', label=r'true')
