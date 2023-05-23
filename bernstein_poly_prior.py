@@ -4,6 +4,7 @@ import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 from pyBayes.MCMC_Core import MCMC_Gibbs, MCMC_MH, MCMC_Diag
+from pyBayes.rv_gen_dirichlet import Sampler_Dirichlet
 
 seed(20230515)
 np.random.seed(20230515)
@@ -24,11 +25,11 @@ sim1_grid = [x/100 for x in range(100)]
 sim1_pdf = [0.3*sp.stats.beta.pdf(x/100, 0.1, 0.9)+0.5*sp.stats.beta.pdf(x/100, 5, 10)+0.2*sp.stats.beta.pdf(x/100, 12, 3) for x in range(100)]
 
 sim1_y_200 = data_simulator_beta_mixture(200)
-sim1_y_2000 = data_simulator_beta_mixture(2000)
+sim1_y_500 = data_simulator_beta_mixture(500)
 
-plt.hist(sim1_y_2000, bins=50, density=True)
-plt.plot(sim1_grid, sim1_pdf)
-plt.show()
+# plt.hist(sim1_y_500, bins=50, density=True)
+# plt.plot(sim1_grid, sim1_pdf)
+# plt.show()
 
 def data_simulator_logit_normal(n_num_data):
     y_data_list = []
@@ -48,27 +49,29 @@ sim2_grid = [x/100 for x in range(1,100)]
 sim2_pdf = [pdf_logit_normal(x/100) for x in range(1,100)]
 
 sim2_y_200 = data_simulator_logit_normal(200)
-sim2_y_2000 = data_simulator_logit_normal(2000)
+sim2_y_500 = data_simulator_logit_normal(500)
 
-plt.hist(sim2_y_2000, bins=50, density=True)
-plt.plot(sim2_grid, sim2_pdf)
-plt.show()
-
-
-
-def pois_log_prior_pmf_for_k(k):
-    "on 0,1,2,... "
-    return sp.stats.poisson.logpmf(k, 1)
+# plt.hist(sim2_y_500, bins=50, density=True)
+# plt.plot(sim2_grid, sim2_pdf)
+# plt.show()
 
 
-class Random_Bernstein_Poly_Posterior(MCMC_Gibbs):
-    def __init__(self, data: list[float], log_prior_pmf_for_k, dp_prior_F0_distfunc, dp_prior_M: int) -> None:
+class Random_Bernstein_Poly_Posterior_MCMC(MCMC_Gibbs):
+    def __init__(self, data: list[float], initial, 
+                 log_prior_pmf_for_k, 
+                 dp_prior_M: int, dp_prior_F0_distfunc, dp_prior_log_f0_densityfunc,
+                 proposal_k_window=3, proposal_y_window=3) -> None:
+        self.MC_sample = [initial]
         self.x_data = data
         self.n = len(data)
         self.log_prior_pmf_for_k = log_prior_pmf_for_k
         self.dp_prior_F0_distfunc = dp_prior_F0_distfunc
+        self.dp_prior_log_f0_densityfunc = dp_prior_log_f0_densityfunc
         self.dp_prior_M = dp_prior_M
-        
+
+        self.proposal_k_window = proposal_k_window
+        self.proposal_y_window = proposal_y_window
+
     def _theta_group_indicator(self, y, k):
         for j in range(1,k+1):
             if y <= j/k:
@@ -79,16 +82,20 @@ class Random_Bernstein_Poly_Posterior(MCMC_Gibbs):
         # 0  1
         #[k, [y_1,...,y_n]]
         def log_target_mass(k):
+            k = k[0]
             log_mass = self.log_prior_pmf_for_k(k)
             for x, y in zip(self.x_data, last_param[1]):
                 theta_grp_indicator = self._theta_group_indicator(y,k)
                 log_mass += sp.stats.beta.logpdf(x, a=theta_grp_indicator, b=k-theta_grp_indicator+1)
+            return log_mass
         def proposal_sampler(from_smpl):
-            window = 2
+            from_smpl = from_smpl[0]
+            window = self.proposal_k_window
             candid = randint(max(1,from_smpl-window), from_smpl+window)
-            return candid
+            return [candid]
         def log_proposal_mass(from_smpl, to_smpl):
-            window = 2
+            from_smpl = from_smpl[0]
+            window = self.proposal_k_window
             window_length = from_smpl+window - max(1,from_smpl-window) + 1
             return -log(window_length)
         k_mcmc_inst = MCMC_MH(log_target_mass, log_proposal_mass, proposal_sampler, [last_param[0]])
@@ -111,10 +118,11 @@ class Random_Bernstein_Poly_Posterior(MCMC_Gibbs):
         #[k, [y_1,...,y_n]]
         k = last_param[0]
         
+        new_y_vec = []
         for v, x in enumerate(self.x_data):
             b_val_at_x = self._b_F0_weight_func(x, k)
             q_vec = [self.dp_prior_M * b_val_at_x] # #q_{v,0}
-            for w, y in enumerate(last_param):
+            for w, y in enumerate(last_param[1]):
                 if v==w:
                     q_vec.append(0)
                 else:
@@ -123,6 +131,154 @@ class Random_Bernstein_Poly_Posterior(MCMC_Gibbs):
             
             q = choices([x-1 for x in range(self.n+1)], weights=q_vec)[0]
             if q == -1:
-                pass #implement here. draw y from psi(y)
+                def log_target_density(y_place):
+                    y_place = y_place[0]
+                    theta_grp_indicator = self._theta_group_indicator(y_place,k)
+                    return self.dp_prior_log_f0_densityfunc(y_place) + sp.stats.beta.logpdf(x, a=theta_grp_indicator, b=k-theta_grp_indicator+1)
+                def proposal_sampler(from_smpl):
+                    return [uniform(0,1)] #hmm
+                def log_proposal_density(from_smpl, to_smpl):
+                    return 0
+                y_mcmc_inst = MCMC_MH(log_target_density, log_proposal_density, proposal_sampler,
+                                      initial=[x]) #hmm2
+                y_mcmc_inst.generate_samples(2, verbose=False)
+                new_y_v = y_mcmc_inst.MC_sample[-1][0]
             else:
-                y_v = last_param[q]
+                new_y_v = last_param[1][q]
+            new_y_vec.append(new_y_v)
+        new_sample = [k, new_y_vec]
+        return new_sample
+    
+    def sampler(self, **kwargs):
+        last = self.MC_sample[-1]
+        new = self.deep_copier(last)
+        #update new
+        new = self._full_conditional_sampler_for_k(new)
+        new = self._full_conditional_sampler_for_y(new)
+        self.MC_sample.append(new)
+
+
+class Random_Bernstein_Poly_Posterior_Density_Work:
+    def __init__(self, MC_sample: list, dp_prior_M: int, dp_prior_F0_distfunc) -> None:
+        self.MC_sample = MC_sample
+        #MC_sample
+        # 0  1
+        #[k, [y_1,...,y_n]]
+
+        self.dp_prior_F0_distfunc = dp_prior_F0_distfunc
+        self.dp_prior_M = dp_prior_M
+        
+        self.dir_generator_inst = Sampler_Dirichlet(20230518)
+
+    def _counter_for_r(self, k, y_vec:list):
+        sorted_y_vec = sorted(y_vec)
+        r_vec = []
+        j=1
+        r=0
+        for y in sorted_y_vec:
+            if y <= j/k:
+                r += 1
+            else:
+                while y > j/k:
+                    r_vec.append(r)
+                    j += 1
+                    r = 0
+                r = 1
+        r_vec.append(r)
+        while j < k:
+            r_vec.append(0)
+            j += 1
+        # print(r_vec) # for debugging
+        # assert len(r_vec)==k #after debugging, delete this line
+        return r_vec
+
+    def _dir_param_a_constructor(self, k, include_a0=False):
+        a_vec = []
+        if include_a0:
+            a_vec.append(self.dp_prior_M * self.dp_prior_F0_distfunc(0))
+            
+        for j in range(1, k+1):
+            a = self.dp_prior_M * (self.dp_prior_F0_distfunc(j/k) - self.dp_prior_F0_distfunc((j-1)/k))
+            a_vec.append(a)
+        return a_vec
+
+    def _conditional_sampler_for_w(self):
+        #param
+        # 0  1
+        #[k, [y_1,...,y_n]]
+        w_vec_list = []
+        for k, y_vec in self.MC_sample:
+            a_vec = self._dir_param_a_constructor(k)
+            r_vec = self._counter_for_r(k, y_vec)
+            assert len(a_vec)==len(r_vec)
+            dir_param_vec = [a + r for a, r in zip(a_vec, r_vec)]
+            w_vec = self.dir_generator_inst.sampler(dir_param_vec)
+            w_vec_list.append(w_vec)
+        # print(w_vec_list) # for debugging
+        return w_vec_list
+
+    def _eval_posterior_density(self, w_vec, grid):
+        k = len(w_vec)
+        val_on_grid = []
+        for x in grid:
+            val = 0
+            for i, w_j in enumerate(w_vec):
+                j = i+1
+                val += (w_j * sp.stats.beta.pdf(x, j, k-j+1))
+            val_on_grid.append(val)
+        return val_on_grid
+
+    def get_posterior_density(self, grid):
+        w_vec_list = self._conditional_sampler_for_w()
+        post_density_list = []
+        for w_vec in w_vec_list:
+            post_density_list.append(self._eval_posterior_density(w_vec, grid))
+        return post_density_list
+
+if __name__=="__main__":
+    def pois_log_prior_pmf_for_k(k):
+        "on 0,1,2,... "
+        return sp.stats.poisson.logpmf(k, 1)
+
+    def unif_cdf(y):
+        return y
+    def unif_log_pdf(y):
+        return 0
+
+    test_data = sim1_y_200
+    test_data_len = len(test_data)
+    test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
+        test_data, [20, [uniform(0,1) for _ in range(test_data_len)]],
+        pois_log_prior_pmf_for_k, 1, unif_cdf, unif_log_pdf)
+    test_MCMC_inst.generate_samples(5000)
+
+    test_MCMC_diag_writer_inst = MCMC_Diag()
+    test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
+    test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim1_y_200_")
+
+    test_MCMC_diag_inst1 = MCMC_Diag()
+    test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
+    test_MCMC_diag_inst1.set_variable_names(["k", "y"])
+    # test_MCMC_diag_inst1.burnin(10)
+    test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
+    
+    test_MCMC_diag_inst2 = MCMC_Diag()
+    test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
+    test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
+    test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
+
+
+    test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
+    for i, s in enumerate(test_density_inst.MC_sample):
+        if i%200==0:
+            print(test_density_inst._counter_for_r(*s))
+
+    nn = 100
+    grid = [(x+0.5)/nn for x in range(nn)]
+    density_list = test_density_inst.get_posterior_density(grid)
+    for d in density_list:
+        plt.plot(grid, d, color='blue')
+        
+    plt.hist(test_data, bins=50, density=True, color='orange')
+    plt.plot(sim1_grid, sim1_pdf, color='red')
+    plt.show()
