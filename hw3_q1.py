@@ -24,8 +24,8 @@ class Hw3Q1_MarginalSampler(MCMC_Gibbs):
             self.hyper_b_mu = 1
             self.hyper_a_tau2 = 0.01
             self.hyper_b_tau2 = 0.01
-            self.hyper_a_alpha = 2
-            self.hyper_b_alpha = 4
+            self.hyper_a_alpha = 0.01
+            self.hyper_b_alpha = 0.01
         else:
             self.hyper_a_phi, self.hyper_b_phi, self.hyper_a_mu, self.hyper_b_mu, self.hyper_a_tau2, self.hyper_b_tau2, self.hyper_a_alpha, self.hyper_b_alpha = hyper
     
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     with open("data/hwk3-data.txt", "r", newline="\n") as f:
         for line in f:
             data.append(float(line))
-    print(data[:20])
+    # print(data[:20])
     print(len(data)) #250
     # plt.hist(data, bins=50)
     # plt.show()
@@ -217,13 +217,11 @@ if __name__ == "__main__":
 #                         0     1  2  3  4    5
     gibbs_iter_initial = [data, 1, 0, 1, 0.5, 1]
     gibbs_inst = Hw3Q1_MarginalSampler(gibbs_iter_initial, data)
-    gibbs_inst.generate_samples(500)
-    # print(gibbs_inst.MC_sample)
-
+    gibbs_inst.generate_samples(1000)
     
     diag_inst = MCMC_Diag()
     diag_inst.set_mc_sample_from_MCMC_instance(gibbs_inst)
-    diag_inst.burnin(100)
+    diag_inst.burnin(200)
 
     diag_inst_theta = MCMC_Diag()
     diag_inst_theta.set_mc_samples_from_list(diag_inst.get_specific_dim_samples(0))
@@ -249,7 +247,10 @@ if __name__ == "__main__":
     # ==
     grid = np.linspace(-7, 7, 50).tolist()
     density_pt_est_on_grid = posterior_predictive_density_estimator(grid, diag_inst.MC_sample, 250)
-    plt.plot(grid, density_pt_est_on_grid)
-    plt.hist(data, bins=50, density=True)
+    density_true_on_grid = [0.2*sp_stats.norm.pdf(x, -5, 1)+0.5*sp_stats.norm.pdf(x, 0, 1)+0.3*sp_stats.norm.pdf(3.5,1) for x in grid]
+
+    plt.hist(data, bins=50, density=True, color="orange", label='data')
+    plt.plot(grid, density_true_on_grid, color="red", label='true')
+    plt.plot(grid, density_pt_est_on_grid, color="blue", label='estimated')
     plt.show()
 
