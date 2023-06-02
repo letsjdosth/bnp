@@ -1,7 +1,9 @@
 from math import exp, log
 import time
+from random import gammavariate
 
 import numpy as np
+import scipy.stats as sp_stats
 from scipy.special import digamma
 import matplotlib.pyplot as plt
 
@@ -150,7 +152,7 @@ class Hw3Q1_MeanfieldVB:
                 norm_square += (s1-s2)**2
         return norm_square**0.5
 
-    def run(self, tol=0.001, print_iter_cycle=100):
+    def run(self, tol, print_iter_cycle=100):
         start_time = time.time()
         i = 0
         while True:
@@ -169,8 +171,44 @@ class Hw3Q1_MeanfieldVB:
 
         print("iteration", i, " done! (elapsed time for execution: ", elap_time//60,"min ", elap_time%60,"sec)")
 
-    # def construct_estimate_density(self, grid):
-        
+    def construct_estimate_density(self, grid, MC_integral_num_iter=50):
+        #variational parameter
+        # 0      1      2                                  3                           4
+        #[beta1, beta2, [(gamma_l1,gamma_l2),l=1,...,N-1], [(xi_l1,xi_l2), l=1,...,N], (pi_i1,...,pi_iN),i=1,...,n]
+        optim_pt = self.optim_path[-1]
+        p_y_post_vec = []
+        for y in grid:
+            p_y_post = 0
+            # l = 0
+            eqplV = optim_pt[2][0][0]/sum(optim_pt[2][0])
+            product_1minusV = optim_pt[2][0][1]/sum(optim_pt[2][0])
+            phi = gammavariate(optim_pt[0], 1/optim_pt[1])
+            eqNy = sp_stats.norm.pdf(y, optim_pt[3][0][0], (optim_pt[3][0][1]+1/phi)**0.5)
+            p_y_post += (eqplV*eqNy)
+
+            for l in range(1, self.truncation_N-1):
+                gamma_l1, gamma_l2 = optim_pt[2][l]
+                eqplV = product_1minusV * gamma_l1/(gamma_l1+gamma_l2)
+                product_1minusV *= (gamma_l2/(gamma_l1+gamma_l2))
+                eqNy_sum = 0
+                for _ in range(MC_integral_num_iter):
+                    phi = gammavariate(optim_pt[0], 1/optim_pt[1])
+                    eqNy = sp_stats.norm.pdf(y, optim_pt[3][l][0], (optim_pt[3][l][1]+1/phi)**0.5)
+                    eqNy_sum += eqNy
+                eqNy_mean = eqNy_sum / MC_integral_num_iter
+                p_y_post += (eqplV*eqNy_mean)
+            
+            # l = N
+            eqplV = product_1minusV
+            eqNy_sum = 0
+            for _ in range(MC_integral_num_iter):
+                phi = gammavariate(optim_pt[0], 1/optim_pt[1])
+                eqNy = sp_stats.norm.pdf(y, optim_pt[3][self.truncation_N-1][0], (optim_pt[3][self.truncation_N-1][1]+1/phi)**0.5)
+                eqNy_sum += eqNy
+            eqNy_mean = eqNy_sum / MC_integral_num_iter
+            p_y_post += (eqplV*eqNy_mean)
+            p_y_post_vec.append(p_y_post)
+        return p_y_post_vec
 
 
 if __name__=="__main__":
@@ -186,7 +224,7 @@ if __name__=="__main__":
                [[0,10] for _ in range(truncation_N)],
                [[1/truncation_N for _ in range(truncation_N)] for _ in range(len(data))]]
     vb_inst = Hw3Q1_MeanfieldVB(initial, data, truncation_N)
-    vb_inst.run(tol=0.01)
+    vb_inst.run(tol=0.1)
     optim_pt = vb_inst.optim_path[-1]
     #variational parameter
     # 0      1      2                                  3                           4
@@ -205,4 +243,13 @@ if __name__=="__main__":
         print("L"+str(i), " = ", Li, " with prob ", temp_pi)
         print("Z_L"+str(i)+"~ N(", optim_pt[3][Li][0], ",", optim_pt[3][Li][0], ")")
 
+    grid = np.linspace(-7, 7, 50).tolist()
+    density_pt_est_on_grid = vb_inst.construct_estimate_density(grid)
+    density_true_on_grid = [0.2*sp_stats.norm.pdf(x, -5, 1)+0.5*sp_stats.norm.pdf(x, 0, 1)+0.3*sp_stats.norm.pdf(x, 3.5, 1) for x in grid]
 
+
+    plt.hist(data, bins=50, density=True, color="orange", label='data')
+    plt.plot(grid, density_pt_est_on_grid, color="blue", label='posterior')
+    plt.plot(grid, density_true_on_grid, color="red", label='true')
+    plt.legend()
+    plt.show()

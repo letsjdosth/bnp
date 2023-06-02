@@ -42,7 +42,7 @@ class Hw3Q1_MarginalSampler(MCMC_Gibbs):
         self.MC_sample.append(new)
     
     def theta_counter(self, theta_vec:list):
-        "n_star, theta_stars, n_js"
+        "n_star, theta_stars, n_js, first-class func"
         distinguished_theta_num_n_star = 0
         distinguished_theta_stars = []
         distinguished_theta_star_count = []
@@ -177,7 +177,7 @@ def posterior_predictive_density_estimator(grid, posterior_samples, n_sample_siz
     # [[theta_1,...,theta_n], phi, mu, tau2, eta, alpha]
     # 0       1            2
     #(n_star, theta_stars, n_js)
-
+    temp_gibbs_inst = Hw3Q1_MarginalSampler([None], [None], None)
     prob_vec_at_grid = []
     for y in grid:
         prob_vec_at_y = []
@@ -187,7 +187,7 @@ def posterior_predictive_density_estimator(grid, posterior_samples, n_sample_siz
             if unif_sample < post_g0_weight:
                 theta_0 = sp_stats.norm.rvs(s[2], s[3]**0.5)
             else:
-                _, theta_stars, n_js = gibbs_inst.theta_counter(s[0])
+                _, theta_stars, n_js = temp_gibbs_inst.theta_counter(s[0])
                 theta_0 = choices(theta_stars, weights=n_js)
             # print(theta_0, s[1]) # for debug
             post_prob_y0 = sp_stats.norm.pdf(y, theta_0, s[1]**0.5)
@@ -196,6 +196,35 @@ def posterior_predictive_density_estimator(grid, posterior_samples, n_sample_siz
         prob_vec_at_grid.append(expected_at_y)
     return prob_vec_at_grid
 
+def prior_predictive_density_estimator(grid, hyper, prior_simul_size=300):
+    # hyperparameters
+    #  0            1            2           3           4             5             6              7
+    # [hyper_a_phi, hyper_b_phi, hyper_a_mu, hyper_b_mu, hyper_a_tau2, hyper_b_tau2, hyper_a_alpha, hyper_b_alpha]
+    #  0                      1    2   3     4     5
+    # [[theta_1,...,theta_n], phi, mu, tau2, eta, alpha]
+    # 0       1            2
+    #(n_star, theta_stars, n_js)
+    prior_samples = []
+    for _ in range(prior_simul_size):
+        invgamma_sampler_inst = Sampler_univariate_InvGamma()
+        phi_prior_sample = invgamma_sampler_inst.sampler(hyper[0], hyper[1])
+        mu_prior_sample = sp_stats.norm.rvs(hyper[2], hyper[3]**0.5)
+        tau2_prior_sample = invgamma_sampler_inst.sampler(hyper[4], hyper[5])
+        theta_prior_sample = None
+        alpha_prior_sample = sp_stats.gamma.rvs(a=hyper[6], scale=1/hyper[7])
+        prior_samples.append([[theta_prior_sample], phi_prior_sample, mu_prior_sample, tau2_prior_sample, None, alpha_prior_sample])
+
+    prob_vec_at_grid = []
+    for y in grid:
+        prob_vec_at_y = []
+        for s in prior_samples:
+            theta_0 = sp_stats.norm.rvs(s[2], s[3]**0.5)
+            prior_prob_y0 = sp_stats.norm.pdf(y, theta_0, s[1]**0.5)
+            # print(s[2], s[3]**0.5, theta_0, y, prior_prob_y0) #for debug
+            prob_vec_at_y.append(prior_prob_y0)
+        expected_at_y = sum(prob_vec_at_y)/len(prob_vec_at_y)
+        prob_vec_at_grid.append(expected_at_y)
+    return prob_vec_at_grid
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -211,16 +240,32 @@ if __name__ == "__main__":
 
     seed(20230528)
     np.random.seed(20230528)
+    
+    # hyperparameters
+    #  0            1            2           3           4             5             6              7
+    # [hyper_a_phi, hyper_b_phi, hyper_a_mu, hyper_b_mu, hyper_a_tau2, hyper_b_tau2, hyper_a_alpha, hyper_b_alpha]
+    hyperparam_set1 = [0.01, 0.01, 0, 1, 0.01, 0.01, 0.01, 0.01] #less informative
+    hyperparam_set2 = [1, 0.01, 0, 1, 0.01, 0.01, 0.01, 0.01] #inflated phi
+    hyperparam_set3 = [0.01, 0.01, 0, 1, 1, 0.01, 0.01, 0.01] #inflated tau2
+    hyperparam_set4 = [0.01, 0.01, 5, 0.1, 0.01, 0.01, 0.01, 0.01] #wrong mean of mu
+
+    hyperparam_set01 = [0.01, 0.01, 0, 1, 0.01, 0.01, 2, 15] #alpha with E(n*)=1
+    hyperparam_set02 = [0.01, 0.01, 0, 1, 0.01, 0.01, 2, 4] #alpha with E(n*)=3
+    hyperparam_set03 = [0.01, 0.01, 0, 1, 0.01, 0.01, 2, 0.9] #alpha with E(n*)=10
+    hyperparam_set04 = [0.01, 0.01, 0, 1, 0.01, 0.01, 2, 0.1] #alpha with E(n*)=48
+
+    now_hyper = hyperparam_set02
 
     #  0                      1    2   3     4    5
     # [[theta_1,...,theta_n], phi, mu, tau2, eta, alpha]
-#                         0     1  2  3  4    5
-    gibbs_iter_initial = [data, 1, 0, 1, 0.5, 1]
-    gibbs_inst = Hw3Q1_MarginalSampler(gibbs_iter_initial, data)
-    gibbs_inst.generate_samples(1000)
+#                         0     1    2    3   4    5
+    gibbs_iter_initial = [data, 0.6, 0.5, 10, 0.02, 0.5]
+    gibbs_inst = Hw3Q1_MarginalSampler(gibbs_iter_initial, data, hyper=now_hyper)
+    gibbs_inst.generate_samples(5000, print_iter_cycle=50)
     
     diag_inst = MCMC_Diag()
     diag_inst.set_mc_sample_from_MCMC_instance(gibbs_inst)
+    diag_inst.write_samples("hw3q1_MCMCsamples")
     diag_inst.burnin(200)
 
     diag_inst_theta = MCMC_Diag()
@@ -241,16 +286,22 @@ if __name__ == "__main__":
 
     # ==
     diag_inst_theta.show_traceplot((4,5), [x for x in range(20)])
+    diag_inst_theta.show_cred_interval_plot(mark="median")
     diag_inst_other_params.show_traceplot((2,3))
+    diag_inst_other_params.show_hist((2,3))
     diag_inst_n_star.show_traceplot((1,1))
+    diag_inst_n_star.show_hist((1,1))
 
     # ==
     grid = np.linspace(-7, 7, 50).tolist()
     density_pt_est_on_grid = posterior_predictive_density_estimator(grid, diag_inst.MC_sample, 250)
-    density_true_on_grid = [0.2*sp_stats.norm.pdf(x, -5, 1)+0.5*sp_stats.norm.pdf(x, 0, 1)+0.3*sp_stats.norm.pdf(3.5,1) for x in grid]
+    density_true_on_grid = [0.2*sp_stats.norm.pdf(x, -5, 1)+0.5*sp_stats.norm.pdf(x, 0, 1)+0.3*sp_stats.norm.pdf(x, 3.5, 1) for x in grid]
+    density_prior_pt_est_on_grid = prior_predictive_density_estimator(grid, now_hyper)
+
 
     plt.hist(data, bins=50, density=True, color="orange", label='data')
+    plt.plot(grid, density_prior_pt_est_on_grid, color="green", label='prior')
+    plt.plot(grid, density_pt_est_on_grid, color="blue", label='posterior')
     plt.plot(grid, density_true_on_grid, color="red", label='true')
-    plt.plot(grid, density_pt_est_on_grid, color="blue", label='estimated')
+    plt.legend()
     plt.show()
-

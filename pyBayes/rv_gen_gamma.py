@@ -37,7 +37,12 @@ class Sampler_univariate_InvGamma(GammaBase):
     
     def sampler(self, alpha_shape, beta_rate):
         self._parameter_support_checker(alpha_shape, beta_rate)
-        return 1/gammavariate(alpha_shape, 1/beta_rate)
+        scale = 1/beta_rate
+        try:
+            sample = 1/gammavariate(alpha_shape, scale)
+        except ZeroDivisionError: #problematic, but...
+            sample = self.sampler(alpha_shape, beta_rate)
+        return sample
 
 class Sampler_univariate_Chisq():
     # chisq(v) ~ gamma(shape=v/2, rate=1/2)

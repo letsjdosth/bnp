@@ -409,7 +409,7 @@ class MCMC_Diag:
         if show:
             plt.show()
 
-    def show_mean_CI_plot(self, choose_dims=None, show=True):
+    def show_cred_interval_plot(self, choose_dims=None, mark="mean", show=True):
         plot_data = []
         if choose_dims is None:
             choose_dims = [i for i in range(self.num_dim)]
@@ -429,7 +429,12 @@ class MCMC_Diag:
         for i, dim_idx in enumerate(choose_dims):
             quantile = self.get_sample_quantile([0.025, 0.25, 0.5, 0.75, 0.975])[dim_idx]
             x = i+1
-            plt.plot([x], [mean_vec_choose_dims[i]], 'ro')
+            if mark=="mean":
+                plt.plot([x], [mean_vec_choose_dims[i]], 'ro')
+            elif mark=="median":
+                plt.plot([x], [quantile[2]], 'ro')
+            else:
+                raise ValueError("mark should be either 'mean' or 'median'.")
             plt.plot([x, x], [quantile[0], quantile[4]], color='black', linestyle='-', linewidth=2, zorder=0)
             plt.plot([x-0.1, x+0.1], [quantile[1], quantile[1]], color='black', linestyle='-', linewidth=2, zorder=0)
             plt.plot([x-0.1, x+0.1], [quantile[3], quantile[3]], color='black', linestyle='-', linewidth=2, zorder=0)
