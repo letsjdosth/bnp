@@ -1,5 +1,7 @@
 from math import log, inf
 from random import randint, seed, choices
+import csv
+
 import numpy as np
 import scipy.stats as sp_stats
 
@@ -226,6 +228,19 @@ def prior_predictive_density_estimator(grid, hyper, prior_simul_size=300):
         prob_vec_at_grid.append(expected_at_y)
     return prob_vec_at_grid
 
+def sample_reader_from_csv_HW3Q1(filename):
+    #  0                      1    2   3     4     5
+    # [[theta_1,...,theta_n], phi, mu, tau2, eta, alpha]
+    with open(filename+".csv", "r", newline="") as csv_f:
+        csv_reader = csv.reader(csv_f)
+        MC_sample = []
+        for row in csv_reader:
+            theta = [float(x) for x in row[0][1:-1].split(',')]
+            s = [theta, float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5])]
+            MC_sample.append(s)
+    return MC_sample
+            
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
@@ -258,14 +273,23 @@ if __name__ == "__main__":
 
     #  0                      1    2   3     4    5
     # [[theta_1,...,theta_n], phi, mu, tau2, eta, alpha]
-#                         0     1    2    3   4    5
+    #                     0     1    2    3   4    5
     gibbs_iter_initial = [data, 0.6, 0.5, 10, 0.02, 0.5]
-    gibbs_inst = Hw3Q1_MarginalSampler(gibbs_iter_initial, data, hyper=now_hyper)
-    gibbs_inst.generate_samples(5000, print_iter_cycle=50)
     
+    gibbs_inst = Hw3Q1_MarginalSampler(gibbs_iter_initial, data, hyper=now_hyper)
     diag_inst = MCMC_Diag()
-    diag_inst.set_mc_sample_from_MCMC_instance(gibbs_inst)
-    diag_inst.write_samples("hw3q1_MCMCsamples")
+    
+    mcmc_run = True
+    if mcmc_run:
+        gibbs_inst.generate_samples(6200, print_iter_cycle=50)
+        MC_sample = gibbs_inst.MC_sample
+        diag_inst.set_mc_samples_from_list(MC_sample)
+        diag_inst.write_samples("hw3q1_MCMCsamples")
+    else:    
+        MC_sample = sample_reader_from_csv_HW3Q1("hw3q1_MCMCsamples")
+        print(len(MC_sample))
+        diag_inst.set_mc_samples_from_list(MC_sample)
+
     diag_inst.burnin(200)
 
     diag_inst_theta = MCMC_Diag()
