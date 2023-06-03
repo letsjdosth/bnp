@@ -269,7 +269,7 @@ if __name__ == "__main__":
     hyperparam_set03 = [0.01, 0.01, 0, 1, 0.01, 0.01, 2, 0.9] #alpha with E(n*)=10
     hyperparam_set04 = [0.01, 0.01, 0, 1, 0.01, 0.01, 2, 0.1] #alpha with E(n*)=48
 
-    now_hyper = hyperparam_set02
+    now_hyper = hyperparam_set1
 
     #  0                      1    2   3     4    5
     # [[theta_1,...,theta_n], phi, mu, tau2, eta, alpha]
@@ -281,10 +281,10 @@ if __name__ == "__main__":
     
     mcmc_run = True
     if mcmc_run:
-        gibbs_inst.generate_samples(6200, print_iter_cycle=50)
+        gibbs_inst.generate_samples(500, print_iter_cycle=50)
         MC_sample = gibbs_inst.MC_sample
         diag_inst.set_mc_samples_from_list(MC_sample)
-        diag_inst.write_samples("hw3q1_MCMCsamples")
+        # diag_inst.write_samples("hw3q1_MCMCsamples")
     else:    
         MC_sample = sample_reader_from_csv_HW3Q1("hw3q1_MCMCsamples")
         print(len(MC_sample))

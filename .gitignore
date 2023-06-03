@@ -1,6 +1,7 @@
 # user
 *.csv
 *.ipynb
+*.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
