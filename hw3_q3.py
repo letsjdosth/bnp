@@ -23,9 +23,9 @@ class Hw3Q1_MeanfieldVB:
         self.truncation_N = truncation_N
         
         # fixed parameters
-        self.hyper_m = 0.05
-        self.hyper_s2 = 1
-        self.hyper_alpha = 5
+        self.hyper_m = -0.06
+        self.hyper_s2 = 16.45
+        self.hyper_alpha = 0.6
 
         self.hyper_a_phi = 100
         self.hyper_b_phi = 100
