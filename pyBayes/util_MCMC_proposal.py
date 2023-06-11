@@ -22,6 +22,24 @@ def unif_proposal_sampler(from_smpl, lower_lim, upper_lim, window):
     new = [uniform(applied_window[0], applied_window[1])]
     return new
 
+# univariate continuous uniform, spherical proposal: sampler & log-pdf
+def unif_spherical_proposal_sampler(from_smpl, lower_lim, upper_lim, window):
+    "return: [u]. Symmetric proposal scheme."
+    from_smpl = from_smpl[0]
+    applied_window = (from_smpl-window/2, from_smpl+window/2)
+    support_length = upper_lim - lower_lim
+    new_val = uniform(applied_window[0], applied_window[1])
+    if new_val < lower_lim:
+        new_val = new_val + support_length
+    elif new_val > upper_lim:
+        new_val = new_val - support_length
+    return [new_val]
+
+def unif_spherical_proposal_log_pdf(from_smpl, to_smpl):
+    #symmetric
+    return 0
+
+
 # multivariate normal proposal: sampler & log-pdf
 def gaussian_proposal_log_pdf(from_smpl, to_smpl):
     # symmetric

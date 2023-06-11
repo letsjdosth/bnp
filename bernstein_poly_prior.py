@@ -1,59 +1,11 @@
-from math import sqrt, exp, log, pi
+import csv
+from math import sqrt, exp, log, pi, ceil
 from random import seed, uniform, betavariate, normalvariate, randint, choices
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 from pyBayes.MCMC_Core import MCMC_Gibbs, MCMC_MH, MCMC_Diag
 from pyBayes.rv_gen_dirichlet import Sampler_Dirichlet
-
-seed(20230515)
-np.random.seed(20230515)
-
-def data_simulator_beta_mixture(n_num_data):
-    y_data_list = []
-    for _ in range(n_num_data):
-        u = uniform(0,1)
-        if u<0.3:
-            y_data_list.append(betavariate(0.1, 0.9))
-        elif u<0.8:
-            y_data_list.append(betavariate(5, 10))
-        else:
-            y_data_list.append(betavariate(12, 3))
-    return y_data_list
-
-sim1_grid = [x/100 for x in range(100)]
-sim1_pdf = [0.3*sp.stats.beta.pdf(x/100, 0.1, 0.9)+0.5*sp.stats.beta.pdf(x/100, 5, 10)+0.2*sp.stats.beta.pdf(x/100, 12, 3) for x in range(100)]
-
-sim1_y_200 = data_simulator_beta_mixture(200)
-sim1_y_500 = data_simulator_beta_mixture(500)
-
-# plt.hist(sim1_y_500, bins=50, density=True)
-# plt.plot(sim1_grid, sim1_pdf)
-# plt.show()
-
-def data_simulator_logit_normal(n_num_data):
-    y_data_list = []
-    for _ in range(n_num_data):
-        mu = 0
-        sigma = 1.7
-        x = normalvariate(mu, sigma)
-        y_data_list.append(1/(1+np.exp(-x)))
-    return y_data_list
-
-def pdf_logit_normal(x):
-    mu = 0
-    sigma = 1.7
-    return 1/sqrt(2*pi*sigma**2) * exp(-(1/(2*sigma**2))*(log(x/(1-x))-mu)**2)*(1/x + 1/(1-x))
-
-sim2_grid = [x/100 for x in range(1,100)]
-sim2_pdf = [pdf_logit_normal(x/100) for x in range(1,100)]
-
-sim2_y_200 = data_simulator_logit_normal(200)
-sim2_y_500 = data_simulator_logit_normal(500)
-
-# plt.hist(sim2_y_500, bins=50, density=True)
-# plt.plot(sim2_grid, sim2_pdf)
-# plt.show()
 
 
 class Random_Bernstein_Poly_Posterior_MCMC(MCMC_Gibbs):
@@ -235,50 +187,333 @@ class Random_Bernstein_Poly_Posterior_Density_Work:
             post_density_list.append(self._eval_posterior_density(w_vec, grid))
         return post_density_list
 
+    def get_posterior_cred_interval(self, grid, prob_level, center='mean'):
+        tail_prob_level = (1-prob_level)/2
+        post_density_ndarray = np.array(self.get_posterior_density(grid))
+        mean_vec = np.mean(post_density_ndarray, axis=0)
+        quantile_vec = np.quantile(post_density_ndarray, q=[tail_prob_level, 0.5, 1-tail_prob_level], axis=0)
+        quantile_vec = quantile_vec.tolist()
+        ci_on_grid = [quantile_vec[0], quantile_vec[2]]
+        
+        center_on_grid = None
+        if center == "median":
+            center_on_grid = quantile_vec[1]
+        elif center == "mean":
+            center_on_grid = mean_vec
+        else:
+            raise ValueError("center can be either 'mean' or 'median")
+        return center_on_grid, ci_on_grid
+
+
+def sample_reader_from_csv_bernstein_poly_prior(filename):
+    #MC_sample
+    # 0  1
+    #[k, [y_1,...,y_n]]
+    with open(filename+".csv", "r", newline="") as csv_f:
+        csv_reader = csv.reader(csv_f)
+        MC_sample = []
+        for row in csv_reader:
+            k = int(row[0])
+            y = [float(row[i]) for i in range(1, len(row))]
+            MC_sample.append([k,y])
+    return MC_sample
+            
+
 if __name__=="__main__":
+    seed(20230515)
+    np.random.seed(20230515)
+
+    def data_simulator_beta_mixture(n_num_data):
+        y_data_list = []
+        for _ in range(n_num_data):
+            u = uniform(0,1)
+            if u<0.3:
+                y_data_list.append(betavariate(0.1, 0.9))
+            elif u<0.8:
+                y_data_list.append(betavariate(5, 10))
+            else:
+                y_data_list.append(betavariate(12, 3))
+        return y_data_list
+
+    sim1_grid = [x/100 for x in range(100)]
+    sim1_pdf = [0.3*sp.stats.beta.pdf(x/100, 0.1, 0.9)+0.5*sp.stats.beta.pdf(x/100, 5, 10)+0.2*sp.stats.beta.pdf(x/100, 12, 3) for x in range(100)]
+
+    sim1_y_300 = data_simulator_beta_mixture(300)
+    sim1_y_500 = data_simulator_beta_mixture(500)
+
+    plt.hist(sim1_y_300, bins=50, density=True, alpha=0.5)
+    plt.plot(sim1_grid, sim1_pdf, color='red')
+    plt.show()
+
+    def data_simulator_logit_normal(n_num_data, mu, sigma):
+        y_data_list = []
+        for _ in range(n_num_data):
+            x = normalvariate(mu, sigma)
+            y_data_list.append(1/(1+np.exp(-x)))
+        return y_data_list
+
+    def pdf_logit_normal(x, mu, sigma):
+        return 1/sqrt(2*pi*sigma**2) * exp(-(1/(2*sigma**2))*(log(x/(1-x))-mu)**2)*(1/(x*(1-x)))
+
+    def data_simulator_logit_mixture_normal(n_num_data):
+        n1 = 0
+        w1 = 0.4
+        mu1 = -1
+        sigma1 = 0.3
+
+        n2 = 0
+        # w2 = 1-w1
+        mu2 = 1.2
+        sigma2 = 0.6
+        
+        for _ in range(n_num_data):
+            u = uniform(0, 1)
+            if u < w1:
+                n1 += 1
+            else:
+                n2 += 1
+        sample_list1 = data_simulator_logit_normal(n1, mu1, sigma1)
+        sample_list2 = data_simulator_logit_normal(n2, mu2, sigma2)
+        return sample_list1 + sample_list2
+    
+    def pdf_logit_mixture_normal(x):
+        w1 = 0.4
+        mu1 = -1
+        sigma1 = 0.3
+
+        w2 = 1-w1
+        mu2 = 1.2
+        sigma2 = 0.6
+        return w1*pdf_logit_normal(x,mu1,sigma1)+w2*pdf_logit_normal(x,mu2,sigma2)
+    
+    sim2_grid = [x/100 for x in range(1,100)]
+    sim2_pdf = [pdf_logit_mixture_normal(x/100) for x in range(1,100)]
+
+    sim2_y_300 = data_simulator_logit_mixture_normal(300)
+    sim2_y_500 = data_simulator_logit_mixture_normal(500)
+
+    plt.hist(sim2_y_300, bins=50, density=True, alpha=0.5)
+    plt.plot(sim2_grid, sim2_pdf, color='red')
+    plt.show()
+
+    def data_simulator_bernstein_poly_prior(n_num_data):
+        y_data_list = []
+        k = 60
+        #F = 0.3*beta_dist(60,30)+0.7*beta_dist(1,2)
+        for _ in range(n_num_data):
+            u = uniform(0,1)
+            if u < 0.3:
+                v = betavariate(60, 30)
+            else:
+                v = betavariate(1, 2)
+            j = ceil(v*k)
+            y = betavariate(j, k-j+1)
+            y_data_list.append(y)
+        return y_data_list
+
+    def approx_pdf_bernstein_poly_prior(x):
+        k = 60
+        #F = 0.3*beta_dist(60,30)+0.7*beta_dist(1,2)
+        mc_iter = 1000
+        mc_integ_vals = []
+        for _ in range(mc_iter):
+            u = uniform(0,1)
+            if u < 0.3:
+                v = betavariate(60, 30)
+            else:
+                v = betavariate(1, 2)
+            j = ceil(v*k)
+            y = sp.stats.beta.pdf(x, j, k-j+1)
+            mc_integ_vals.append(y)
+        return sum(mc_integ_vals)/mc_iter
+
+
+    sim3_grid = [x/100 for x in range(100)]
+    sim3_F_pdf = [0.3*sp.stats.beta.pdf(x/100, 60, 30)+0.7*sp.stats.beta.pdf(x/100, 1, 2) for x in range(100)]
+    sim3_pdf = [approx_pdf_bernstein_poly_prior(x/100) for x in range(100)]
+
+    sim3_y_300 = data_simulator_bernstein_poly_prior(300)
+    sim3_y_500 = data_simulator_bernstein_poly_prior(500)
+
+    plt.hist(sim3_y_300, bins=60, density=True, alpha=0.5)
+    plt.plot(sim3_grid, sim3_pdf, c='orange')
+    plt.plot(sim3_grid, sim3_F_pdf, c='red')
+    plt.show()
+
     def pois_log_prior_pmf_for_k(k):
         "on 0,1,2,... "
         return sp.stats.poisson.logpmf(k, 1)
-
+    def pois_log_prior_pmf_for_k_lam50(k):
+        "on 0,1,2,... "
+        return sp.stats.poisson.logpmf(k, 50)
     def unif_cdf(y):
         return y
     def unif_log_pdf(y):
         return 0
 
-    test_data = sim1_y_200
-    test_data_len = len(test_data)
-    test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
-        test_data, [20, [uniform(0,1) for _ in range(test_data_len)]],
-        pois_log_prior_pmf_for_k, 1, unif_cdf, unif_log_pdf)
-    test_MCMC_inst.generate_samples(5000)
+    # ===
 
-    test_MCMC_diag_writer_inst = MCMC_Diag()
-    test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
-    test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim1_y_200_")
+    sim1 = True
+    sim2 = True
+    sim3 = True
 
-    test_MCMC_diag_inst1 = MCMC_Diag()
-    test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
-    test_MCMC_diag_inst1.set_variable_names(["k", "y"])
-    # test_MCMC_diag_inst1.burnin(10)
-    test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
-    
-    test_MCMC_diag_inst2 = MCMC_Diag()
-    test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
-    test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
-    test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
+    if sim3:
+        sim3_run = True
 
+        test_data = sim3_y_300
+        test_data_len = len(test_data)
+        test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
+            test_data, [50, [uniform(0,1) for _ in range(test_data_len)]],
+            pois_log_prior_pmf_for_k_lam50, 1, unif_cdf, unif_log_pdf)
+        test_MCMC_diag_inst1 = MCMC_Diag()
 
-    test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
-    for i, s in enumerate(test_density_inst.MC_sample):
-        if i%200==0:
-            print(test_density_inst._counter_for_r(*s))
+        if sim3_run:
+            test_MCMC_inst.generate_samples(5000)
 
-    nn = 100
-    grid = [(x+0.5)/nn for x in range(nn)]
-    density_list = test_density_inst.get_posterior_density(grid)
-    for d in density_list:
-        plt.plot(grid, d, color='blue')
+            test_MCMC_diag_writer_inst = MCMC_Diag()
+            test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
+            test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim3_y_300_")
+            test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
+        else:
+            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./k_y_flatten_from_sim3_y_300_")
+            test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
+
+        test_MCMC_diag_inst1.set_variable_names(["k", "y"])
+        test_MCMC_diag_inst1.burnin(500)
+        test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
         
-    plt.hist(test_data, bins=50, density=True, color='orange')
-    plt.plot(sim1_grid, sim1_pdf, color='red')
-    plt.show()
+        test_MCMC_diag_inst2 = MCMC_Diag()
+        test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
+        test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
+        test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
+
+        test_MCMC_diag_inst1.thinning(5)
+
+        test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
+        # for i, s in enumerate(test_density_inst.MC_sample):
+        #     if i%200==0:
+        #         print(test_density_inst._counter_for_r(*s))
+
+        num_grid_pt = 100
+        grid = [(x+0.5)/num_grid_pt for x in range(num_grid_pt)]
+        # density_list = test_density_inst.get_posterior_density(grid)
+        # for d in density_list:
+        #     plt.plot(grid, d, color='blue')
+            
+        mean_on_grid, ci_on_grid = test_density_inst.get_posterior_cred_interval(grid, 0.95)
+        plt.plot(grid, mean_on_grid, color='blue')
+        plt.plot(grid, ci_on_grid[0], color='gray')
+        plt.plot(grid, ci_on_grid[1], color='gray')
+
+        plt.hist(sim3_y_500, bins=60, density=True, alpha=0.5)
+        plt.plot(sim3_grid, sim3_pdf, c='red')
+        plt.plot(sim3_grid, sim3_F_pdf, c='orange')
+        plt.show()
+
+
+    if sim1:
+        sim1_run = True
+
+        test_data = sim1_y_300
+        test_data_len = len(test_data)
+        test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
+            test_data, [20, [uniform(0,1) for _ in range(test_data_len)]],
+            pois_log_prior_pmf_for_k, 1, unif_cdf, unif_log_pdf)
+        test_MCMC_diag_inst1 = MCMC_Diag()
+
+        if sim1_run:
+            test_MCMC_inst.generate_samples(5000)
+
+            test_MCMC_diag_writer_inst = MCMC_Diag()
+            test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
+            test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim1_y_300_")
+            test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
+        else:
+            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./bernstein_poly_prior_from_sim1_y_300_/k_y_flatten_from_sim1_y_300_")
+            test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
+
+        test_MCMC_diag_inst1.set_variable_names(["k", "y"])
+        test_MCMC_diag_inst1.burnin(500)
+        test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
+        
+        test_MCMC_diag_inst2 = MCMC_Diag()
+        test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
+        test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
+        test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
+
+        test_MCMC_diag_inst1.thinning(5)
+
+        test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
+        # for i, s in enumerate(test_density_inst.MC_sample):
+        #     if i%200==0:
+        #         print(test_density_inst._counter_for_r(*s))
+
+        num_grid_pt = 100
+        grid = [(x+0.5)/num_grid_pt for x in range(num_grid_pt)]
+        # density_list = test_density_inst.get_posterior_density(grid)
+        # for d in density_list:
+        #     plt.plot(grid, d, color='blue')
+            
+        mean_on_grid, ci_on_grid = test_density_inst.get_posterior_cred_interval(grid, 0.95)
+        plt.plot(grid, mean_on_grid, color='blue')
+        plt.plot(grid, ci_on_grid[0], color='gray')
+        plt.plot(grid, ci_on_grid[1], color='gray')
+
+        plt.hist(test_data, bins=50, density=True, alpha=0.5)
+        plt.plot(sim1_grid, sim1_pdf, color='red')
+        plt.show()
+
+    if sim2:
+        sim2_run = True
+
+        test_data = sim2_y_300
+        test_data_len = len(test_data)
+        
+        test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
+            test_data, [20, [uniform(0,1) for _ in range(test_data_len)]],
+            pois_log_prior_pmf_for_k, 1, unif_cdf, unif_log_pdf)
+        test_MCMC_diag_inst1 = MCMC_Diag()
+
+        if sim2_run:
+            test_MCMC_inst.generate_samples(5000, print_iter_cycle=50)
+            
+            test_MCMC_diag_writer_inst = MCMC_Diag()
+            test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
+            test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim2_y_300_")
+
+            test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
+        else:
+            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./bernstein_poly_prior_from_sim2_y_300_/k_y_flatten_from_sim2_y_300_")
+            test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
+       
+        
+        test_MCMC_diag_inst1.set_variable_names(["k", "y"])
+        test_MCMC_diag_inst1.burnin(500)
+        test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
+        
+        test_MCMC_diag_inst2 = MCMC_Diag()
+        test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
+        test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
+        test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
+
+        test_MCMC_diag_inst1.thinning(5) # be careful to the timing of thinning
+
+        test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
+        # for i, s in enumerate(test_density_inst.MC_sample):
+        #     if i%200==0:
+        #         print(test_density_inst._counter_for_r(*s))
+
+        num_grid_pt = 100
+        grid = [(x+0.5)/num_grid_pt for x in range(num_grid_pt)]
+        # density_list = test_density_inst.get_posterior_density(grid)
+        # for d in density_list:
+        #     plt.plot(grid, d, color='blue')
+        
+        mean_on_grid, ci_on_grid = test_density_inst.get_posterior_cred_interval(grid, 0.95)
+        plt.plot(grid, mean_on_grid, color='blue')
+        plt.plot(grid, ci_on_grid[0], color='gray')
+        plt.plot(grid, ci_on_grid[1], color='gray')
+
+        plt.hist(test_data, bins=50, density=True, alpha='orange')
+        plt.plot(sim2_grid, sim2_pdf, color='red')
+        plt.show()

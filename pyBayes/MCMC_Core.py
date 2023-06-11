@@ -16,12 +16,13 @@ class MCMC_base:
 
     def generate_samples(self, num_samples, pid=None, verbose=True, print_iter_cycle=500):
         start_time = time.time()
+        est_time_mark = min(print_iter_cycle, 100)
+        
         for i in range(1, num_samples):
             self.sampler(iter_idx=i)
-            
-            if i==100 and verbose:
+            if i==est_time_mark and verbose:
                 elap_time_head_iter = time.time()-start_time
-                estimated_time = (num_samples/100)*elap_time_head_iter
+                estimated_time = (num_samples/est_time_mark)*elap_time_head_iter
                 print("estimated running time: ", estimated_time//60, "min ", estimated_time%60, "sec")
 
             if i%print_iter_cycle == 0 and verbose and pid is not None:
