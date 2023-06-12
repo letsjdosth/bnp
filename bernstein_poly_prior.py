@@ -357,62 +357,8 @@ if __name__=="__main__":
     sim2 = True
     sim3 = False
 
-    if sim3:
-        sim3_run = True
-
-        test_data = sim3_y_200
-        test_data_len = len(test_data)
-        test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
-            test_data, [50, [uniform(0,1) for _ in range(test_data_len)]],
-            pois_log_prior_pmf_for_k_lam50, 1, unif_cdf, unif_log_pdf)
-        test_MCMC_diag_inst1 = MCMC_Diag()
-
-        if sim3_run:
-            test_MCMC_inst.generate_samples(3000, print_iter_cycle=50)
-
-            test_MCMC_diag_writer_inst = MCMC_Diag()
-            test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
-            test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim3_y_200_")
-            test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
-        else:
-            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./k_y_flatten_from_sim3_y_200_")
-            test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
-
-        test_MCMC_diag_inst1.set_variable_names(["k", "y"])
-        test_MCMC_diag_inst1.burnin(500)
-        test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
-        
-        test_MCMC_diag_inst2 = MCMC_Diag()
-        test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
-        test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
-        test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
-
-        test_MCMC_diag_inst1.thinning(5)
-
-        test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
-        # for i, s in enumerate(test_density_inst.MC_sample):
-        #     if i%200==0:
-        #         print(test_density_inst._counter_for_r(*s))
-
-        num_grid_pt = 100
-        grid = [(x+0.5)/num_grid_pt for x in range(num_grid_pt)]
-        # density_list = test_density_inst.get_posterior_density(grid)
-        # for d in density_list:
-        #     plt.plot(grid, d, color='blue')
-            
-        mean_on_grid, ci_on_grid = test_density_inst.get_posterior_cred_interval(grid, 0.95)
-        plt.plot(grid, mean_on_grid, color='blue')
-        plt.plot(grid, ci_on_grid[0], color='gray')
-        plt.plot(grid, ci_on_grid[1], color='gray')
-
-        plt.hist(sim3_y_500, bins=60, density=True, alpha=0.5)
-        plt.plot(sim3_grid, sim3_pdf, c='red')
-        plt.plot(sim3_grid, sim3_F_pdf, c='orange')
-        plt.show()
-
-
     if sim1:
-        sim1_run = True
+        sim1_run = False
 
         test_data = sim1_y_200
         test_data_len = len(test_data)
@@ -429,12 +375,13 @@ if __name__=="__main__":
             test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim1_y_200_")
             test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
         else:
-            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./bernstein_poly_prior_from_sim1_y_200_/k_y_flatten_from_sim1_y_200_")
+            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./bernstein_poly_prior_sim1/k_y_flatten_from_sim1_y_200_")
             test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
 
         test_MCMC_diag_inst1.set_variable_names(["k", "y"])
         test_MCMC_diag_inst1.burnin(500)
         test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
+        test_MCMC_diag_inst1.show_hist_specific_dim(0, True)
         
         test_MCMC_diag_inst2 = MCMC_Diag()
         test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
@@ -464,7 +411,7 @@ if __name__=="__main__":
         plt.show()
 
     if sim2:
-        sim2_run = True
+        sim2_run = False
 
         test_data = sim2_y_200
         test_data_len = len(test_data)
@@ -483,13 +430,14 @@ if __name__=="__main__":
 
             test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
         else:
-            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./new_bernstein_poly_prior_sim2(240min)/k_y_flatten_from_sim2_y_200_")
+            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./bernstein_poly_prior_sim2_lamb50(290min)/k_y_flatten_from_sim2_y_200_lam50pois")
             test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
        
         
         test_MCMC_diag_inst1.set_variable_names(["k", "y"])
         test_MCMC_diag_inst1.burnin(500)
         test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
+        test_MCMC_diag_inst1.show_hist_specific_dim(0, True)
         
         test_MCMC_diag_inst2 = MCMC_Diag()
         test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
@@ -516,4 +464,58 @@ if __name__=="__main__":
 
         plt.hist(test_data, bins=50, density=True, alpha=0.5)
         plt.plot(sim2_grid, sim2_pdf, color='red')
+        plt.show()
+        
+    if sim3:
+        sim3_run = False
+
+        test_data = sim3_y_200
+        test_data_len = len(test_data)
+        test_MCMC_inst = Random_Bernstein_Poly_Posterior_MCMC(
+            test_data, [50, [uniform(0,1) for _ in range(test_data_len)]],
+            pois_log_prior_pmf_for_k_lam50, 1, unif_cdf, unif_log_pdf)
+        test_MCMC_diag_inst1 = MCMC_Diag()
+
+        if sim3_run:
+            test_MCMC_inst.generate_samples(3000, print_iter_cycle=50)
+
+            test_MCMC_diag_writer_inst = MCMC_Diag()
+            test_MCMC_diag_writer_inst.set_mc_samples_from_list([[x[0]]+x[1] for x in test_MCMC_inst.MC_sample])
+            test_MCMC_diag_writer_inst.write_samples("k_y_flatten_from_sim3_y_200_")
+            test_MCMC_diag_inst1.set_mc_sample_from_MCMC_instance(test_MCMC_inst)
+        else:
+            raw_MC_samples = sample_reader_from_csv_bernstein_poly_prior("./bernstein_poly_prior_sim3(261min)/k_y_flatten_from_sim3_y_200_")
+            test_MCMC_diag_inst1.set_mc_samples_from_list(raw_MC_samples)
+
+        test_MCMC_diag_inst1.set_variable_names(["k", "y"])
+        test_MCMC_diag_inst1.burnin(500)
+        test_MCMC_diag_inst1.show_traceplot_specific_dim(0, True)
+        test_MCMC_diag_inst1.show_hist_specific_dim(0, True)
+        
+        test_MCMC_diag_inst2 = MCMC_Diag()
+        test_MCMC_diag_inst2.set_mc_samples_from_list(test_MCMC_diag_inst1.get_specific_dim_samples(1))
+        test_MCMC_diag_inst2.set_variable_names(["y"+str(i+1) for i in range(len(test_MCMC_diag_inst2.MC_sample[0]))])
+        test_MCMC_diag_inst2.show_traceplot((1,3), [0,1,2])
+
+        test_MCMC_diag_inst1.thinning(5)
+
+        test_density_inst = Random_Bernstein_Poly_Posterior_Density_Work(test_MCMC_diag_inst1.MC_sample, 1, unif_cdf)
+        # for i, s in enumerate(test_density_inst.MC_sample):
+        #     if i%200==0:
+        #         print(test_density_inst._counter_for_r(*s))
+
+        num_grid_pt = 100
+        grid = [(x+0.5)/num_grid_pt for x in range(num_grid_pt)]
+        # density_list = test_density_inst.get_posterior_density(grid)
+        # for d in density_list:
+        #     plt.plot(grid, d, color='blue')
+            
+        mean_on_grid, ci_on_grid = test_density_inst.get_posterior_cred_interval(grid, 0.95)
+        plt.plot(grid, mean_on_grid, color='blue')
+        plt.plot(grid, ci_on_grid[0], color='gray')
+        plt.plot(grid, ci_on_grid[1], color='gray')
+
+        plt.hist(sim3_y_500, bins=60, density=True, alpha=0.5)
+        plt.plot(sim3_grid, sim3_pdf, c='red')
+        plt.plot(sim3_grid, sim3_F_pdf, c='orange')
         plt.show()
