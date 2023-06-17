@@ -293,7 +293,7 @@ if __name__=="__main__":
     # [(mu_l,Sigma_l;l=1,2,...,N), (w_l;l=1,...,N), (L_i;i=1,...,n), mu_0, tau_0, alpha]
     trunc_N = 30
 
-    run = True
+    run = True #No False now
     diag_inst = MCMC_Diag()
     if run:
         initial = [[(data_airquality[i], np.eye(4)) for i in range(trunc_N)], 
@@ -303,25 +303,51 @@ if __name__=="__main__":
                 np.eye(4),
                 10]
         gibbs_inst = HW4DensityReg(initial, data_airquality, trunc_N)
-        gibbs_inst.generate_samples(100, print_iter_cycle=50)
+        gibbs_inst.generate_samples(1000, print_iter_cycle=50)
         diag_inst.set_mc_sample_from_MCMC_instance(gibbs_inst)
         diag_inst.write_samples("hw4_samples")
     else:
+        # reader is not implemented
         mc_samples = sample_reader_from_csv_hw4("hw4_samples")
         diag_inst.set_mc_samples_from_list(mc_samples)
 
     diag_inst.set_variable_names(["mu_sigma", "w", "L", "mu0", "tau0", "alpha"])
-    # diag_inst.burnin(200)
-    diag_inst.show_traceplot((1,3),[3,5])
+    diag_inst.burnin(200)
 
+    ###########################
+    # sample
+    #  0                           1                2                3     4      5
+    # [(mu_l,Sigma_l;l=1,2,...,N), (w_l;l=1,...,N), (L_i;i=1,...,n), mu_0, tau_0, alpha]
+    diag_inst.show_traceplot((1,2),[3,5])
+    diag_inst_alpha = MCMC_Diag()
+    alpha_list = [[a] for a in diag_inst.get_specific_dim_samples(5)]
+    diag_inst_alpha.set_mc_samples_from_list(alpha_list)
+    diag_inst_alpha.set_variable_names(['alpha'])
+    diag_inst_alpha.show_hist((1,1))
 
-    for smpl in diag_inst.MC_sample[-3:-1]:
-        print(smpl[5]) #alpha
+    diag_inst_w = MCMC_Diag()
+    diag_inst_w.set_mc_samples_from_list(diag_inst.get_specific_dim_samples(1))
+    diag_inst_w.set_variable_names(['w'+str(l) for l in range(1,trunc_N+1)])
+    diag_inst_w.show_traceplot((1,4), [0,1,2,3])
+    diag_inst_w.show_hist((1,4), [0,1,2,3])
+
+    diag_inst_L = MCMC_Diag()
+    diag_inst_L.set_mc_samples_from_list(diag_inst.get_specific_dim_samples(2))
+    diag_inst_L.set_variable_names(['L'+str(i) for i in range(len(data_airquality))])
+    diag_inst_L.show_traceplot((1,4), [0,1,2,3])
+    diag_inst_L.show_hist((1,4), [0,1,2,3])
+
+    for smpl in diag_inst.MC_sample[-4:-1]:
         print(smpl[2]) #Li
-        print([x[0] for x in smpl[0]])
-        print([round(y,4) for y in smpl[1]]) #w1
-        print(smpl[0][smpl[2][0]])
 
+    diag_inst_mu_l = MCMC_Diag()
+    diag_inst_mu_l.set_mc_samples_from_list([m[0][0] for m in diag_inst.get_specific_dim_samples(0)])
+    diag_inst_mu_l.set_variable_names(['mu_'+str(l) for l in range(1,trunc_N+1)])
+    diag_inst_mu_l.show_traceplot((1,4), [0,1,2,3])
+
+
+    ###########################
+    # Inference
     infer_inst = HW4DensityReg_Infer(data_airquality, diag_inst.MC_sample)
     # "1",41, 190, 7.4, 67, 5, 1
     # "2",36, 118, 8, 72, 5, 2
@@ -342,6 +368,8 @@ if __name__=="__main__":
     plt.scatter(joint_samples[1], joint_samples[0], alpha=0.3, c='blue', label='posterior samples')
     plt.xlim(0, 350)
     plt.ylim(0, 200)
+    plt.xlabel("solar.R")
+    plt.ylabel("ozone")
     plt.legend()
     plt.show()
     #wind
@@ -349,6 +377,8 @@ if __name__=="__main__":
     plt.scatter(joint_samples[2], joint_samples[0], alpha=0.3, c='blue', label='posterior samples')
     plt.xlim(0, 25)
     plt.ylim(0, 200)
+    plt.xlabel("wind")
+    plt.ylabel("ozone")
     plt.legend()
     plt.show()
     #temp
@@ -356,6 +386,8 @@ if __name__=="__main__":
     plt.scatter(joint_samples[3], joint_samples[0], alpha=0.3, c='blue', label='posterior samples')
     plt.xlim(50, 100)
     plt.ylim(0, 200)
+    plt.xlabel("temp")
+    plt.ylabel("ozone")
     plt.legend()
     plt.show()
 
@@ -379,6 +411,8 @@ if __name__=="__main__":
     plt.plot(solar_r_grid, y_vs_solar_r_upper, c='grey')
     plt.xlim(0, 350)
     plt.ylim(0, 200)
+    plt.xlabel("solar.R")
+    plt.ylabel("ozone")
     plt.legend()
     plt.show()
 
@@ -399,6 +433,8 @@ if __name__=="__main__":
     plt.plot(wind_grid, y_vs_wind_upper, c='grey')
     plt.xlim(0, 25)
     plt.ylim(0, 200)
+    plt.xlabel("wind")
+    plt.ylabel("ozone")
     plt.legend()
     plt.show()
         
@@ -418,6 +454,8 @@ if __name__=="__main__":
     plt.plot(temp_grid, y_vs_temp_upper, c='grey')
     plt.xlim(50, 100)
     plt.ylim(0, 200)
+    plt.xlabel("temp")
+    plt.ylabel("ozone")
     plt.legend()
     plt.show()
     

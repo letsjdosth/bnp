@@ -6,3 +6,5 @@ length(without_na_airquality[,1])
 pairs(airquality[,1:4], panel = panel.smooth, main = "airquality data")
 
 hist(airquality[,2])
+
+colMeans(without_na_airquality)
