@@ -193,34 +193,34 @@ class HW4DensityReg(MCMC_Gibbs):
         
         new_sample = last_param #pointer
         
-        # #update mu0
-        # inv_tau_0 = np.linalg.inv(last_param[4])
-        # inv_s_mu = np.linalg.inv(self.hyper_s_mu)
-        # mu_0_precision = inv_s_mu + inv_tau_0*self.N
-        # mu_0_cov = np.linalg.inv(mu_0_precision)
-        # sum_mu_l = np.zeros(4)
-        # for mu_l, _ in last_param[0]:
-        #     sum_mu_l += mu_l
-        # mu_0_mean = mu_0_cov @ (inv_s_mu@self.hyper_m_mu + inv_tau_0 @ sum_mu_l)
-        # new_mu0 = self.sampler_np.multivariate_normal(mu_0_mean, mu_0_cov)
+        #update mu0
+        inv_tau_0 = np.linalg.inv(last_param[4])
+        inv_s_mu = np.linalg.inv(self.hyper_s_mu)
+        mu_0_precision = inv_s_mu + inv_tau_0*self.N
+        mu_0_cov = np.linalg.inv(mu_0_precision)
+        sum_mu_l = np.zeros(4)
+        for mu_l, _ in last_param[0]:
+            sum_mu_l += mu_l
+        mu_0_mean = mu_0_cov @ (inv_s_mu@self.hyper_m_mu + inv_tau_0 @ sum_mu_l)
+        new_mu0 = self.sampler_np.multivariate_normal(mu_0_mean, mu_0_cov)
 
-        # tau_0_v = self.hyper_tau0_a + self.N
-        # tau_0_lamb = self.hyper_tau0_b
-        # for mu_l, _ in last_param[0]:
-        #     tau_0_lamb += np.outer(mu_l - new_mu0, mu_l - new_mu0)
+        tau_0_v = self.hyper_tau0_a + self.N
+        tau_0_lamb = self.hyper_tau0_b
+        for mu_l, _ in last_param[0]:
+            tau_0_lamb += np.outer(mu_l - new_mu0, mu_l - new_mu0)
             
-        # # new_tau0 = self.sampler_invWishart.sampler_iter(1, tau_0_v, tau_0_lamb, "inv")[0]
-        # new_tau0 = sp_inv_wishart.rvs(tau_0_v, tau_0_lamb)
+        # new_tau0 = self.sampler_invWishart.sampler_iter(1, tau_0_v, tau_0_lamb, "inv")[0]
+        new_tau0 = sp_inv_wishart.rvs(tau_0_v, tau_0_lamb)
         
-        # if np.linalg.det(new_tau0) == 0:
-        #     new_tau0 += (np.eye(4)*self.nonsingular_adjust)
-        
-        new_mu0 = np.zeros(4)
-        new_tau0  = np.eye(4)
+        if np.linalg.det(new_tau0) == 0:
+            new_tau0 += (np.eye(4)*self.nonsingular_adjust)
+
+        #for test
+        # new_mu0 = np.zeros(4)
+        # new_tau0  = np.eye(4)
 
         new_sample[3] = new_mu0
         new_sample[4] = new_tau0
-        # new_sample[4] = np.eye(4)*10
 
         return new_sample
     
@@ -391,7 +391,7 @@ if __name__=="__main__":
     #solar.R
     plt.scatter(data_solar_r, data_ozone, alpha=0.5, c='orange', label='data')
     plt.scatter(joint_samples[1], joint_samples[0], alpha=0.3, c='blue', label='posterior samples')
-    plt.xlim(-3, 3)
+    plt.xlim(-2, 2)
     plt.ylim(-3, 3)
     plt.xlabel("solar.R")
     plt.ylabel("ozone")
@@ -400,7 +400,7 @@ if __name__=="__main__":
     #wind
     plt.scatter(data_wind, data_ozone, alpha=0.5, c='orange', label='data')
     plt.scatter(joint_samples[2], joint_samples[0], alpha=0.3, c='blue', label='posterior samples')
-    plt.xlim(-3, 3)
+    plt.xlim(-2, 2)
     plt.ylim(-3, 3)
     plt.xlabel("wind")
     plt.ylabel("ozone")
@@ -409,7 +409,7 @@ if __name__=="__main__":
     #temp
     plt.scatter(data_temp, data_ozone, alpha=0.5, c='orange', label='data')
     plt.scatter(joint_samples[3], joint_samples[0], alpha=0.3, c='blue', label='posterior samples')
-    plt.xlim(-3, 3)
+    plt.xlim(-2, 2)
     plt.ylim(-3, 3)
     plt.xlabel("temp")
     plt.ylabel("ozone")
@@ -434,7 +434,7 @@ if __name__=="__main__":
     plt.plot(solar_r_grid, y_vs_solar_r_mean, c='red', label='posterior mean')
     plt.plot(solar_r_grid, y_vs_solar_r_lower, c='grey', label='95% CI')
     plt.plot(solar_r_grid, y_vs_solar_r_upper, c='grey')
-    plt.xlim(-3, 3)
+    plt.xlim(-2, 2)
     plt.ylim(-3, 3)
     plt.xlabel("solar.R")
     plt.ylabel("ozone")
@@ -456,7 +456,7 @@ if __name__=="__main__":
     plt.plot(wind_grid, y_vs_wind_mean, c='red', label='posterior mean')
     plt.plot(wind_grid, y_vs_wind_lower, c='grey', label='95% CI')
     plt.plot(wind_grid, y_vs_wind_upper, c='grey')
-    plt.xlim(-3, 3)
+    plt.xlim(-2, 2)
     plt.ylim(-3, 3)
     plt.xlabel("wind")
     plt.ylabel("ozone")
@@ -477,7 +477,7 @@ if __name__=="__main__":
     plt.plot(temp_grid, y_vs_temp_mean, c='red', label='posterior mean')
     plt.plot(temp_grid, y_vs_temp_lower, c='grey', label='95% CI')
     plt.plot(temp_grid, y_vs_temp_upper, c='grey')
-    plt.xlim(-3, 3)
+    plt.xlim(-2, 2)
     plt.ylim(-3, 3)
     plt.xlabel("temp")
     plt.ylabel("ozone")
